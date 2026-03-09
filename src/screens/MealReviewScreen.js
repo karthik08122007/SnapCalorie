@@ -9,7 +9,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { mealsAPI } from '../services/api';
 import { saveFoodToHistory, findSimilarFood } from '../services/foodHistory';
 
-const BASE_URL = 'https://snapcalorie-backend-production.up.railway.app';
+const BASE_URL = (process.env.EXPO_PUBLIC_API_URL || 'https://snapcalorie-backend-production.up.railway.app/api').replace('/api', '');
 
 // Normalize backend meal into a list of editable items
 function initItems(meal) {

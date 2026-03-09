@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const API_URL = 'https://snapcalorie-backend-production.up.railway.app/api';
+const API_URL = process.env.EXPO_PUBLIC_API_URL || 'https://snapcalorie-backend-production.up.railway.app/api';
 
 const api = axios.create({ baseURL: API_URL });
 
@@ -16,6 +16,7 @@ export const authAPI = {
   googleAuth: (idToken) => api.post('/auth/google', { idToken }),
   me: () => api.get('/auth/me'),
   updateProfile: (data) => api.patch('/auth/me', data),
+  deleteAccount: (password) => api.delete('/auth/account', { data: { password } }),
 };
 
 export const mealsAPI = {
@@ -23,7 +24,7 @@ export const mealsAPI = {
     headers: { 'Content-Type': 'multipart/form-data' },
   }),
   analyzeText: (query, mealType) => api.post('/meals/analyze-text', { query, mealType }),
-  getAll: (page = 1, limit = 50) => api.get(`/meals?page=${page}&limit=${limit}`),
+  getAll: (page = 1, limit = 100) => api.get(`/meals?page=${page}&limit=${limit}`),
   delete: (id) => api.delete(`/meals/${id}`),
   update: (id, data) => api.patch(`/meals/${id}`, data),
 };

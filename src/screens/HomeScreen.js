@@ -1,16 +1,17 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { View, Text, ScrollView, StyleSheet, TouchableOpacity, RefreshControl, StatusBar, Image, Dimensions, Modal } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
 import { mealsAPI, authAPI } from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import Svg, { Circle } from 'react-native-svg';
+import { checkGoalNotifications } from '../services/notifications';
 
 const SCREEN_WIDTH = Dimensions.get('window').width;
 const CARD_WIDTH = SCREEN_WIDTH - 32;
 
 const DAYS = ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'];
-const BASE_URL = 'https://snapcalorie-backend-production.up.railway.app';
+const BASE_URL = (process.env.EXPO_PUBLIC_API_URL || 'https://snapcalorie-backend-production.up.railway.app/api').replace('/api', '');
 
 function CalorieRing({ consumed, goal }) {
   const size = 200;
@@ -18,7 +19,6 @@ function CalorieRing({ consumed, goal }) {
   const radius = (size - strokeWidth) / 2;
   const circumference = 2 * Math.PI * radius;
   const pct = Math.min(consumed / goal, 1);
-  const remaining = Math.max(goal - consumed, 0);
 
   return (
     <View style={styles.ringContainer}>
@@ -30,8 +30,8 @@ function CalorieRing({ consumed, goal }) {
           transform={`rotate(-90, ${size / 2}, ${size / 2})`} />
       </Svg>
       <View style={styles.ringCenter}>
-        <Text style={styles.ringCalories}>{remaining}</Text>
-        <Text style={styles.ringLabel}>calories left</Text>
+        <Text style={styles.ringCalories}>{Math.round(consumed)}</Text>
+        <Text style={styles.ringFraction}>/ {goal} kcal</Text>
       </View>
     </View>
   );
@@ -144,7 +144,18 @@ export default function HomeScreen() {
   const [scanInfo, setScanInfo] = useState(null);
   const [tooltipVisible, setTooltipVisible] = useState(false);
 
-  const goalCalories = user?.dailyCalorieGoal || 2000;
+  const goalCalories = (() => {
+    if (user?.dailyCalorieGoal) return user.dailyCalorieGoal;
+    const w = parseFloat(user?.weightKg) || 0;
+    const h = parseFloat(user?.heightCm) || 0;
+    const a = parseFloat(user?.age) || 0;
+    if (!w || !h || !a) return 2000;
+    let bmr = 10 * w + 6.25 * h - 5 * a + (user?.gender === 'female' ? -161 : 5);
+    const actMap = { sedentary: 1.2, light: 1.375, moderate: 1.55, active: 1.725, extra: 1.9 };
+    const act = actMap[user?.activityLevel] || actMap[user?.activity] || 1.55;
+    const goalAdj = { lose: -500, maintain: 0, gain: 500 }[user?.goal] || 0;
+    return Math.round(bmr * act + goalAdj);
+  })();
 
   const streak = (() => {
     const dates = new Set(meals.map(m => new Date(m.analyzed_at).toDateString()));
@@ -171,10 +182,10 @@ export default function HomeScreen() {
       const res = await authAPI.me();
       const u = res.data.data || res.data;
       setScanInfo({
-        used: u.scansUsed ?? u.scans_used ?? 0,
+        used: u.scanCount ?? u.scansUsed ?? u.scans_used ?? 0,
         limit: u.scanLimit ?? u.scan_limit ?? 20,
         plan: u.plan ?? u.subscription ?? 'FREE',
-        resetAt: u.scansResetAt ?? u.scans_reset_at ?? null,
+        resetAt: u.scanResetAt ?? u.scansResetAt ?? u.scans_reset_at ?? null,
       });
     } catch {}
   }, []);
@@ -183,6 +194,15 @@ export default function HomeScreen() {
     fetchMeals();
     fetchScanInfo();
   }, [fetchMeals, fetchScanInfo]));
+
+  // Fire goal notifications when today's calorie total crosses 25% or 75%
+  useEffect(() => {
+    const todayStr = new Date().toDateString();
+    const todayCals = meals
+      .filter(m => new Date(m.analyzed_at).toDateString() === todayStr)
+      .reduce((s, m) => s + (m.calories || 0), 0);
+    checkGoalNotifications(todayCals, goalCalories);
+  }, [meals]);
 
   const onRefresh = async () => {
     setRefreshing(true);
@@ -434,8 +454,8 @@ const styles = StyleSheet.create({
   // Calorie ring card
   ringContainer: { position: 'relative', alignItems: 'center', justifyContent: 'center' },
   ringCenter: { position: 'absolute', alignItems: 'center' },
-  ringCalories: { fontSize: 36, fontWeight: '800', color: '#333' },
-  ringLabel: { fontSize: 13, color: '#999' },
+  ringCalories: { fontSize: 36, fontWeight: '800', color: '#FF6B35' },
+  ringFraction: { fontSize: 13, color: '#999', fontWeight: '600' },
   macroRow: { flexDirection: 'row', justifyContent: 'space-around', width: '100%', marginTop: 16 },
   macroItem: { alignItems: 'center', gap: 4 },
   macroDot: { width: 8, height: 8, borderRadius: 4 },

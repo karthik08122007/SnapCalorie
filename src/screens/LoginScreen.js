@@ -1,12 +1,19 @@
 import { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, SafeAreaView, KeyboardAvoidingView, Platform, ScrollView, StatusBar } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, SafeAreaView, KeyboardAvoidingView, Platform, ScrollView, StatusBar, Alert } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { GoogleSignin, statusCodes } from '@react-native-google-signin/google-signin';
 import { useAuth } from '../context/AuthContext';
 
-GoogleSignin.configure({
-  webClientId: process.env.EXPO_PUBLIC_GOOGLE_CLIENT_ID,
-});
+// Google Sign-In requires a native build — gracefully unavailable in Expo Go
+let GoogleSignin = null;
+let statusCodes = {};
+try {
+  const googleModule = require('@react-native-google-signin/google-signin');
+  GoogleSignin = googleModule.GoogleSignin;
+  statusCodes = googleModule.statusCodes;
+  GoogleSignin.configure({ webClientId: process.env.EXPO_PUBLIC_GOOGLE_CLIENT_ID });
+} catch {
+  // Native module not available (Expo Go) — Google Sign-In will show "coming soon"
+}
 
 export default function LoginScreen({ navigation }) {
   const [email, setEmail] = useState('');
@@ -18,6 +25,10 @@ export default function LoginScreen({ navigation }) {
   const { login, googleLogin } = useAuth();
 
   const handleGoogleSignIn = async () => {
+    if (!GoogleSignin) {
+      Alert.alert('Coming Soon', 'Google Sign-In will be available in the next update.');
+      return;
+    }
     setGoogleLoading(true);
     setError('');
     try {

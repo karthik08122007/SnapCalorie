@@ -398,7 +398,18 @@ export default function InsightsScreen() {
   const [macroSel, setMacroSel] = useState(null);
   const [mealsSel, setMealsSel] = useState(null);
 
-  const goalCalories = user?.dailyCalorieGoal || 2000;
+  const goalCalories = (() => {
+    if (user?.dailyCalorieGoal) return user.dailyCalorieGoal;
+    const w = parseFloat(user?.weightKg) || 0;
+    const h = parseFloat(user?.heightCm) || 0;
+    const a = parseFloat(user?.age) || 0;
+    if (!w || !h || !a) return 2000;
+    let bmr = 10 * w + 6.25 * h - 5 * a + (user?.gender === 'female' ? -161 : 5);
+    const actMap = { sedentary: 1.2, light: 1.375, moderate: 1.55, active: 1.725, extra: 1.9 };
+    const act = actMap[user?.activityLevel] || 1.55;
+    const goalAdj = { lose: -500, maintain: 0, gain: 500 }[user?.goal] || 0;
+    return Math.round(bmr * act + goalAdj);
+  })();
   // card: marginHorizontal 16 + padding 16 on each side = 64px total horizontal space consumed
   const chartWidth = width - 64;
 

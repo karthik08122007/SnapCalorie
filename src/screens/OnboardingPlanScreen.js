@@ -2,13 +2,21 @@ import { useState } from 'react';
 import { View, Text, StyleSheet, SafeAreaView, TouchableOpacity, ScrollView, Alert, ActivityIndicator } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../context/AuthContext';
+import api from '../services/api';
 
 const FREE_FEATURES = ['20 AI scans/month', 'Basic nutrition tracking', 'Meal history', 'Water tracking'];
 const PRO_FEATURES = ['Unlimited AI scans', 'Advanced insights', 'Priority support', 'Export data', 'No ads'];
 
+let RazorpayCheckout = null;
+try {
+  RazorpayCheckout = require('react-native-razorpay').default;
+} catch {
+  // Not available in Expo Go
+}
+
 export default function OnboardingPlanScreen({ navigation, route }) {
   const [loading, setLoading] = useState(false);
-  const { completeOnboarding } = useAuth();
+  const { completeOnboarding, updateProfile, user } = useAuth();
   const data = route.params;
 
   const handleFree = async () => {
@@ -23,7 +31,68 @@ export default function OnboardingPlanScreen({ navigation, route }) {
   };
 
   const handlePro = async () => {
-    Alert.alert('Coming Soon', 'Razorpay payment will be enabled in the final build.');
+    if (!RazorpayCheckout) {
+      Alert.alert('Not Supported', 'Payments are not available in Expo Go. Please use the installed app.');
+      return;
+    }
+
+    setLoading(true);
+    try {
+      // Step 1: Create Razorpay order on backend
+      const orderRes = await api.post('/subscription/create-order');
+      const { order } = orderRes.data.data;
+
+      // Step 2: Open Razorpay checkout
+      const options = {
+        description: 'SnapCalorie Pro — Monthly',
+        currency: order.currency,
+        key: process.env.EXPO_PUBLIC_RAZORPAY_KEY_ID,
+        amount: order.amount,
+        name: 'SnapCalorie',
+        order_id: order.id,
+        prefill: {
+          email: user?.email || '',
+          name: user?.name || '',
+          contact: '',
+        },
+        theme: { color: '#FF6B35' },
+      };
+
+      const paymentData = await RazorpayCheckout.open(options);
+
+      // Step 3: Verify payment on backend
+      await api.post('/subscription/verify-payment', {
+        razorpay_order_id: paymentData.razorpay_order_id,
+        razorpay_payment_id: paymentData.razorpay_payment_id,
+        razorpay_signature: paymentData.razorpay_signature,
+      });
+
+      // Step 4: Update user context and complete onboarding
+      await updateProfile({ plan: 'pro' });
+      await completeOnboarding({ ...data, plan: 'pro' });
+
+      Alert.alert('🎉 Welcome to Pro!', 'You now have unlimited AI scans and all Pro features.');
+    } catch (error) {
+      if (error?.code === 2) {
+        // User dismissed sheet — do nothing
+      } else {
+        let msg = 'Something went wrong. Please try again.';
+        try {
+          const parsed = JSON.parse(error?.description || '{}');
+          const reason = parsed?.error?.reason;
+          if (reason === 'payment_cancelled') {
+            msg = 'Payment was cancelled. Please try again.';
+          } else {
+            msg = parsed?.error?.description || error?.description || msg;
+          }
+        } catch {
+          msg = error?.description || msg;
+        }
+        Alert.alert('Payment Failed', msg);
+      }
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -59,7 +128,7 @@ export default function OnboardingPlanScreen({ navigation, route }) {
             <Text style={styles.proBadgeText}>MOST POPULAR</Text>
           </View>
           <Text style={styles.planName}>Pro</Text>
-          <Text style={[styles.planPrice, { color: '#FF6B35' }]}>₹299<Text style={styles.planPer}>/month</Text></Text>
+          <Text style={[styles.planPrice, { color: '#FF6B35' }]}>₹39<Text style={styles.planPer}>/month</Text></Text>
           {PRO_FEATURES.map((f, i) => (
             <View key={i} style={styles.featureRow}>
               <Ionicons name="checkmark-circle" size={18} color="#FF6B35" />
@@ -67,11 +136,13 @@ export default function OnboardingPlanScreen({ navigation, route }) {
             </View>
           ))}
           <TouchableOpacity style={styles.proBtn} onPress={handlePro} disabled={loading}>
-            <Text style={styles.proBtnText}>Get Pro ✨</Text>
+            {loading
+              ? <ActivityIndicator color="#fff" />
+              : <Text style={styles.proBtnText}>Get Pro ✨</Text>}
           </TouchableOpacity>
         </View>
 
-        <TouchableOpacity onPress={handleFree}>
+        <TouchableOpacity onPress={handleFree} disabled={loading}>
           <Text style={styles.skip}>Skip for now</Text>
         </TouchableOpacity>
       </ScrollView>

@@ -3,14 +3,7 @@ import { View, Text, TouchableOpacity, StyleSheet, ScrollView, StatusBar, Switch
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as Notifications from 'expo-notifications';
-
-Notifications.setNotificationHandler({
-  handleNotification: async () => ({
-    shouldShowAlert: true,
-    shouldPlaySound: true,
-    shouldSetBadge: false,
-  }),
-});
+import { isGoalAlertsEnabled, setGoalAlertsEnabled } from '../services/notifications';
 
 const WATER_CHANNEL_ID = 'water-reminder';
 
@@ -20,7 +13,6 @@ async function requestPermissions() {
 }
 
 async function scheduleWaterReminders() {
-  // Cancel existing water reminders first
   await cancelWaterReminders();
 
   if (Platform.OS === 'android') {
@@ -40,7 +32,7 @@ async function scheduleWaterReminders() {
     },
     trigger: {
       type: Notifications.SchedulableTriggerInputTypes.TIME_INTERVAL,
-      seconds: 3600, // every hour
+      seconds: 3600,
       repeats: true,
     },
   });
@@ -61,12 +53,32 @@ export default function NotificationsScreen({ navigation }) {
     mealReminders: true,
     dailySummary: true,
     weeklyReport: false,
-    goalAlerts: true,
+    goalAlerts: false,
     tips: false,
     waterReminder: false,
   });
 
+  // Load persisted goalAlerts state on mount
+  useEffect(() => {
+    isGoalAlertsEnabled().then(enabled => {
+      setSettings(prev => ({ ...prev, goalAlerts: enabled }));
+    });
+  }, []);
+
   const toggle = (key) => setSettings(prev => ({ ...prev, [key]: !prev[key] }));
+
+  const handleGoalAlertsToggle = async () => {
+    const newValue = !settings.goalAlerts;
+    const success = await setGoalAlertsEnabled(newValue);
+    if (!success && newValue) {
+      Alert.alert(
+        'Permission Required',
+        'Please allow notifications in your device settings to enable Goal Alerts.',
+      );
+      return;
+    }
+    setSettings(prev => ({ ...prev, goalAlerts: newValue }));
+  };
 
   const handleWaterToggle = async () => {
     const newValue = !settings.waterReminder;
@@ -93,7 +105,7 @@ export default function NotificationsScreen({ navigation }) {
     { key: 'mealReminders', label: 'Meal Reminders', desc: 'Remind you to log breakfast, lunch & dinner', icon: 'alarm-outline', color: '#FF6B35' },
     { key: 'dailySummary', label: 'Daily Summary', desc: 'End-of-day nutrition recap', icon: 'bar-chart-outline', color: '#4ECDC4' },
     { key: 'weeklyReport', label: 'Weekly Report', desc: 'Your weekly progress overview', icon: 'calendar-outline', color: '#45B7D1' },
-    { key: 'goalAlerts', label: 'Goal Alerts', desc: "When you're close to reaching your goals", icon: 'flag-outline', color: '#96CEB4' },
+    { key: 'goalAlerts', label: 'Goal Alerts', desc: 'Notified at 25% and 75% of your daily calorie goal', icon: 'trophy-outline', color: '#96CEB4', onToggle: handleGoalAlertsToggle },
     { key: 'tips', label: 'Nutrition Tips', desc: 'Helpful tips and healthy recipes', icon: 'bulb-outline', color: '#FFD93D' },
   ];
 
@@ -147,7 +159,7 @@ export default function NotificationsScreen({ navigation }) {
               </View>
               <Switch
                 value={settings[item.key]}
-                onValueChange={() => toggle(item.key)}
+                onValueChange={item.onToggle ?? (() => toggle(item.key))}
                 trackColor={{ false: '#eee', true: '#FF6B35' }}
                 thumbColor="#fff"
               />

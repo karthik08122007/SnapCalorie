@@ -1,10 +1,13 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { View, Text, ScrollView, StyleSheet, Image, TouchableOpacity, RefreshControl, StatusBar } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { mealsAPI } from '../services/api';
 
-const BASE_URL = 'https://snapcalorie-backend-production.up.railway.app';
+const WATER_KEY = 'diary_water_' + new Date().toDateString();
+
+const BASE_URL = (process.env.EXPO_PUBLIC_API_URL || 'https://snapcalorie-backend-production.up.railway.app/api').replace('/api', '');
 
 function MealThumb({ imageUrl }) {
   const [error, setError] = useState(false);
@@ -27,7 +30,20 @@ export default function DiaryScreen({ navigation }) {
   const insets = useSafeAreaInsets();
   const [meals, setMeals] = useState([]);
   const [refreshing, setRefreshing] = useState(false);
-  const [water, setWater] = useState(0);
+  const [water, setWaterState] = useState(0);
+
+  // Load today's water count from storage on mount
+  useEffect(() => {
+    AsyncStorage.getItem(WATER_KEY).then(v => { if (v !== null) setWaterState(Number(v)); });
+  }, []);
+
+  const setWater = useCallback((updater) => {
+    setWaterState(prev => {
+      const next = typeof updater === 'function' ? updater(prev) : updater;
+      AsyncStorage.setItem(WATER_KEY, String(next));
+      return next;
+    });
+  }, []);
 
   const fetchMeals = useCallback(async () => {
     try {

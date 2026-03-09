@@ -7,7 +7,7 @@ export default function OnboardingAboutScreen({ navigation }) {
   const [height, setHeight] = useState('');
   const [weight, setWeight] = useState('');
 
-  const canNext = age && height && weight;
+  const canNext = age && height && weight && gender;
 
   return (
     <SafeAreaView style={styles.container}>
@@ -15,6 +15,14 @@ export default function OnboardingAboutScreen({ navigation }) {
         <Text style={styles.logo}>🥗</Text>
         <Text style={styles.title}>Let's set up your profile</Text>
         <Text style={styles.sub}>We need a few details to personalize your calorie goal</Text>
+
+        <View style={styles.cautionBox}>
+          <Text style={styles.cautionIcon}>⚠️</Text>
+          <View style={{ flex: 1 }}>
+            <Text style={styles.cautionTitle}>All fields are required</Text>
+            <Text style={styles.cautionText}>Age, height, weight and gender are used to calculate your calorie goal. <Text style={styles.cautionBold}>Gender cannot be changed after this step.</Text></Text>
+          </View>
+        </View>
 
         <View style={styles.progressBar}>
           <View style={[styles.progressFill, { width: '33%' }]} />
@@ -91,11 +99,6 @@ export default function OnboardingAboutScreen({ navigation }) {
           <Text style={styles.btnText}>Continue →</Text>
         </TouchableOpacity>
 
-        <TouchableOpacity
-          onPress={() => navigation.navigate('OnboardingActivity', { gender, age, height, weight })}
-        >
-          <Text style={styles.skip}>Skip for now</Text>
-        </TouchableOpacity>
       </ScrollView>
     </SafeAreaView>
   );
@@ -106,7 +109,12 @@ const styles = StyleSheet.create({
   scroll: { padding: 24 },
   logo: { fontSize: 40, textAlign: 'center', marginBottom: 12, marginTop: 20 },
   title: { fontSize: 24, fontWeight: '800', color: '#333', textAlign: 'center', marginBottom: 6 },
-  sub: { fontSize: 13, color: '#666', textAlign: 'center', marginBottom: 20 },
+  sub: { fontSize: 13, color: '#666', textAlign: 'center', marginBottom: 12 },
+  cautionBox: { flexDirection: 'row', alignItems: 'flex-start', gap: 10, backgroundColor: '#fffbeb', borderWidth: 1, borderColor: '#fde68a', borderRadius: 12, padding: 12, marginBottom: 8 },
+  cautionIcon: { fontSize: 16, marginTop: 1 },
+  cautionTitle: { fontSize: 13, fontWeight: '700', color: '#92400e', marginBottom: 2 },
+  cautionText: { fontSize: 12, color: '#78350f', lineHeight: 17 },
+  cautionBold: { fontWeight: '800', color: '#b45309' },
   progressBar: { height: 5, backgroundColor: '#f0f0f0', borderRadius: 99, marginBottom: 6 },
   progressFill: { height: 5, backgroundColor: '#FF6B35', borderRadius: 99 },
   progressText: { fontSize: 11, color: '#999', textAlign: 'right', marginBottom: 24 },

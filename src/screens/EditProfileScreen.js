@@ -10,8 +10,8 @@ export default function EditProfileScreen({ navigation }) {
   const insets = useSafeAreaInsets();
   const [name, setName] = useState(user?.name || '');
   const [age, setAge] = useState(String(user?.age || ''));
-  const [weight, setWeight] = useState(String(user?.weight || ''));
-  const [height, setHeight] = useState(String(user?.height || ''));
+  const [weight, setWeight] = useState(String(user?.weightKg || ''));
+  const [height, setHeight] = useState(String(user?.heightCm || ''));
   const [gender, setGender] = useState(user?.gender || '');
   const [saving, setSaving] = useState(false);
 
@@ -22,8 +22,8 @@ export default function EditProfileScreen({ navigation }) {
       await updateProfile({
         name: name.trim(),
         age: age ? Number(age) : undefined,
-        weight: weight ? Number(weight) : undefined,
-        height: height ? Number(height) : undefined,
+        weightKg: weight ? Number(weight) : undefined,
+        heightCm: height ? Number(height) : undefined,
         gender: gender || undefined,
       });
       Alert.alert('Saved', 'Profile updated successfully');
@@ -90,21 +90,32 @@ export default function EditProfileScreen({ navigation }) {
             </View>
 
             <Text style={styles.label}>Gender</Text>
-            <View style={styles.genderRow}>
-              {[
-                { id: 'male', icon: '♂️', label: 'Male' },
-                { id: 'female', icon: '♀️', label: 'Female' },
-              ].map(g => (
-                <TouchableOpacity
-                  key={g.id}
-                  style={[styles.genderBtn, gender === g.id && styles.genderBtnActive]}
-                  onPress={() => setGender(g.id)}
-                >
-                  <Text style={styles.genderIcon}>{g.icon}</Text>
-                  <Text style={[styles.genderText, gender === g.id && styles.genderTextActive]}>{g.label}</Text>
-                </TouchableOpacity>
-              ))}
-            </View>
+            {user?.gender ? (
+              <View style={styles.genderLocked}>
+                <Text style={styles.genderLockedText}>
+                  {user.gender === 'male' ? '♂️ Male' : '♀️ Female'}
+                </Text>
+                <View style={styles.genderLockBadge}>
+                  <Text style={styles.genderLockBadgeText}>🔒 Cannot be changed</Text>
+                </View>
+              </View>
+            ) : (
+              <View style={styles.genderRow}>
+                {[
+                  { id: 'male', icon: '♂️', label: 'Male' },
+                  { id: 'female', icon: '♀️', label: 'Female' },
+                ].map(g => (
+                  <TouchableOpacity
+                    key={g.id}
+                    style={[styles.genderBtn, gender === g.id && styles.genderBtnActive]}
+                    onPress={() => setGender(g.id)}
+                  >
+                    <Text style={styles.genderIcon}>{g.icon}</Text>
+                    <Text style={[styles.genderText, gender === g.id && styles.genderTextActive]}>{g.label}</Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            )}
 
             <View style={styles.twoCol}>
               <View style={{ flex: 1 }}>
@@ -171,6 +182,10 @@ const styles = StyleSheet.create({
   inputRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   unit: { fontSize: 14, color: '#999', width: 36 },
   twoCol: { flexDirection: 'row', marginTop: 4 },
+  genderLocked: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', backgroundColor: '#f5f5f5', borderRadius: 12, padding: 13, borderWidth: 1, borderColor: '#eee' },
+  genderLockedText: { fontSize: 15, fontWeight: '600', color: '#555' },
+  genderLockBadge: { backgroundColor: '#f0f0f0', borderRadius: 8, paddingHorizontal: 10, paddingVertical: 4 },
+  genderLockBadgeText: { fontSize: 11, color: '#999', fontWeight: '600' },
   genderRow: { flexDirection: 'row', gap: 10, marginTop: 4 },
   genderBtn: { flex: 1, borderWidth: 1, borderColor: '#eee', borderRadius: 12, padding: 14, alignItems: 'center', gap: 4, backgroundColor: '#fafafa' },
   genderBtnActive: { borderColor: '#FF6B35', backgroundColor: 'rgba(255,107,53,0.08)' },

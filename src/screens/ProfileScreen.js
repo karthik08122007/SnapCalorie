@@ -1,6 +1,7 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useCallback } from 'react';
 import { View, Text, ScrollView, StyleSheet, TouchableOpacity, StatusBar, RefreshControl } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useFocusEffect } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../context/AuthContext';
 import { mealsAPI } from '../services/api';
@@ -36,7 +37,7 @@ export default function ProfileScreen({ navigation }) {
     } catch {}
   }, []);
 
-  useEffect(() => { fetchMeals(); }, [fetchMeals]);
+  useFocusEffect(useCallback(() => { fetchMeals(); }, [fetchMeals]));
 
   const onRefresh = async () => {
     setRefreshing(true);

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, SafeAreaView, KeyboardAvoidingView, Platform, ScrollView, StatusBar } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, SafeAreaView, KeyboardAvoidingView, Platform, ScrollView, StatusBar, Alert } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../context/AuthContext';
 
@@ -54,7 +54,7 @@ export default function RegisterScreen({ navigation }) {
             <View style={styles.divider} />
           </View>
 
-          <TouchableOpacity style={styles.googleBtn}>
+          <TouchableOpacity style={styles.googleBtn} onPress={() => Alert.alert('Coming Soon', 'Google Sign-Up will be available in the next update.')}>
             <Text style={styles.googleIcon}>G</Text>
             <Text style={styles.googleText}>Sign up with Google</Text>
           </TouchableOpacity>

@@ -89,6 +89,17 @@ export const AuthProvider = ({ children }) => {
       setUser(updatedUser);
       setOnboarded(true);
       if (token) await saveSession(token, updatedUser, true);
+      // Persist body stats to server so they survive re-login
+      try {
+        await authAPI.updateProfile({
+          gender: data.gender,
+          age: data.age ? Number(data.age) : undefined,
+          heightCm: data.height ? Number(data.height) : undefined,
+          weightKg: data.weight ? Number(data.weight) : undefined,
+          activityLevel: data.activity,
+          goal: data.goal,
+        });
+      } catch {}
     } catch {
       setOnboarded(true);
     }
@@ -97,7 +108,8 @@ export const AuthProvider = ({ children }) => {
   const updateProfile = async (data) => {
     try {
       const res = await authAPI.updateProfile(data);
-      const updatedUser = { ...user, ...res.data.data };
+      // Merge order: preserve client-only fields (dailyCalorieGoal etc.) even if server doesn't return them
+      const updatedUser = { ...user, ...data, ...res.data.data };
       setUser(updatedUser);
       if (token) await saveSession(token, updatedUser, onboarded);
     } catch {

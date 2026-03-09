@@ -9,21 +9,28 @@
     "splash": {
       "image": "./assets/splash-icon.png",
       "resizeMode": "contain",
-      "backgroundColor": "#ffffff"
+      "backgroundColor": "#FF6B35"
     },
     "scheme": "snapcalorie",
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.snapcalorie.app"
+      "bundleIdentifier": "com.snapcalorie.app",
+      "buildNumber": "1",
+      "infoPlist": {
+        "NSCameraUsageDescription": "SnapCalorie uses your camera to snap and analyze your meals.",
+        "NSPhotoLibraryUsageDescription": "SnapCalorie accesses your photos to log meals from your gallery."
+      }
     },
     "android": {
       "package": "com.snapcalorie.app",
+      "versionCode": 1,
       "adaptiveIcon": {
-        "backgroundColor": "#E6F4FE",
         "foregroundImage": "./assets/android-icon-foreground.png",
-        "backgroundImage": "./assets/android-icon-background.png",
-        "monochromeImage": "./assets/android-icon-monochrome.png"
-      }
+        "backgroundColor": "#FF6B35"
+      },
+      "permissions": [
+        "android.permission.RECORD_AUDIO"
+      ]
     },
     "web": {
       "favicon": "./assets/favicon.png"
@@ -31,7 +38,28 @@
     "plugins": [
       "expo-web-browser",
       "@react-native-google-signin/google-signin",
-      "expo-secure-store"
-    ]
+      "expo-secure-store",
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Allow SnapCalorie to access your photos to log meals.",
+          "cameraPermission": "Allow SnapCalorie to use your camera to snap and analyze your meals."
+        }
+      ],
+      "expo-font",
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/android-icon-monochrome.png",
+          "color": "#FF6B35"
+        }
+      ]
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "ccc18e10-4527-4138-a6b6-aad3b543f1e5"
+      }
+    },
+    "owner": "karthik22011"
   }
 }
