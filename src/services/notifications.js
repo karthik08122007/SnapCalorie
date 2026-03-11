@@ -46,6 +46,7 @@ export async function checkGoalNotifications(consumed, goal) {
         title: "You're crushing it! 💪",
         body: `${Math.round(pct * 100)}% of your daily goal reached. Keep it up — you're almost there!`,
         sound: true,
+        categoryIdentifier: 'goal_alert',
         data: { goalAlert: true },
       },
       trigger: null, // immediate
@@ -68,6 +69,7 @@ export async function checkGoalNotifications(consumed, goal) {
         title: 'You got this! 🌟',
         body: "Great start today! Keep logging your meals and hit that goal.",
         sound: true,
+        categoryIdentifier: 'goal_alert',
         data: { goalAlert: true, goalAlert25: true },
       },
       trigger: { seconds: 4 * 60 * 60 }, // 4 hours

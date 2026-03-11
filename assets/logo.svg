@@ -1,0 +1,80 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" width="1024" height="1024">
+  <defs>
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#FF9B6A"/>
+      <stop offset="100%" stop-color="#FF5A2D"/>
+    </linearGradient>
+    <radialGradient id="lensGlow" cx="38%" cy="35%" r="55%">
+      <stop offset="0%" stop-color="#FFFFFF" stop-opacity="0.35"/>
+      <stop offset="100%" stop-color="#FF5A2D" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+
+  <!-- Background -->
+  <rect width="1024" height="1024" rx="220" fill="url(#bgGrad)"/>
+
+  <!-- Scanning corner brackets -->
+  <!-- Top-left -->
+  <path d="M188 188 L188 280 M188 188 L280 188" fill="none" stroke="white" stroke-width="28" stroke-linecap="round" stroke-opacity="0.85"/>
+  <!-- Top-right -->
+  <path d="M836 188 L836 280 M836 188 L744 188" fill="none" stroke="white" stroke-width="28" stroke-linecap="round" stroke-opacity="0.85"/>
+  <!-- Bottom-left -->
+  <path d="M188 836 L188 744 M188 836 L280 836" fill="none" stroke="white" stroke-width="28" stroke-linecap="round" stroke-opacity="0.85"/>
+  <!-- Bottom-right -->
+  <path d="M836 836 L836 744 M836 836 L744 836" fill="none" stroke="white" stroke-width="28" stroke-linecap="round" stroke-opacity="0.85"/>
+
+  <!-- Scan line (horizontal dashed line through middle) -->
+  <line x1="230" y1="590" x2="580" y2="590" stroke="white" stroke-width="10" stroke-dasharray="16 12" stroke-opacity="0.45" stroke-linecap="round"/>
+  <polygon points="600,590 580,572 580,608" fill="white" fill-opacity="0.45"/>
+
+  <!-- Dot indicators around apple -->
+  <circle cx="310" cy="390" r="10" fill="white" fill-opacity="0.5"/>
+  <line x1="310" y1="390" x2="356" y2="412" stroke="white" stroke-width="5" stroke-opacity="0.35"/>
+  <circle cx="714" cy="370" r="10" fill="white" fill-opacity="0.5"/>
+  <line x1="714" y1="370" x2="668" y2="395" stroke="white" stroke-width="5" stroke-opacity="0.35"/>
+  <circle cx="730" cy="560" r="10" fill="white" fill-opacity="0.4"/>
+  <line x1="730" y1="560" x2="682" y2="548" stroke="white" stroke-width="5" stroke-opacity="0.3"/>
+  <circle cx="318" cy="600" r="8" fill="white" fill-opacity="0.35"/>
+
+  <!-- Apple body -->
+  <path d="
+    M512 310
+    C512 310 580 270 640 300
+    C700 330 720 400 700 470
+    C740 450 770 460 780 500
+    C790 540 760 560 720 550
+    C710 620 680 700 640 740
+    C610 770 580 770 560 750
+    C545 735 530 730 512 730
+    C494 730 479 735 464 750
+    C444 770 414 770 384 740
+    C344 700 314 620 304 550
+    C264 560 234 540 244 500
+    C254 460 284 450 324 470
+    C304 400 324 330 384 300
+    C444 270 512 310 512 310 Z
+  " fill="white" fill-opacity="0.95"/>
+
+  <!-- Apple stem -->
+  <path d="M512 310 C512 290 524 260 548 248" fill="none" stroke="white" stroke-width="22" stroke-linecap="round" stroke-opacity="0.95"/>
+
+  <!-- Leaf -->
+  <path d="M548 248 C568 230 604 236 612 256 C620 276 596 294 572 288 C556 284 548 268 548 248 Z" fill="white" fill-opacity="0.95"/>
+
+  <!-- Camera lens in apple center -->
+  <!-- Outer ring -->
+  <circle cx="512" cy="530" r="152" fill="none" stroke="white" stroke-width="6" stroke-opacity="0.3"/>
+  <!-- Lens body -->
+  <circle cx="512" cy="530" r="144" fill="url(#lensGlow)"/>
+  <circle cx="512" cy="530" r="144" fill="#FF6B35" fill-opacity="0.55"/>
+  <!-- Middle ring -->
+  <circle cx="512" cy="530" r="100" fill="none" stroke="white" stroke-width="4" stroke-opacity="0.25"/>
+  <!-- Inner lens -->
+  <circle cx="512" cy="530" r="72" fill="#FF5020" fill-opacity="0.7"/>
+  <!-- Pupil -->
+  <circle cx="512" cy="530" r="32" fill="#CC3A10" fill-opacity="0.8"/>
+  <!-- Specular highlight -->
+  <ellipse cx="486" cy="508" rx="22" ry="14" fill="white" fill-opacity="0.45" transform="rotate(-30 486 508)"/>
+  <ellipse cx="478" cy="502" rx="8" ry="5" fill="white" fill-opacity="0.65" transform="rotate(-30 478 502)"/>
+</svg>
