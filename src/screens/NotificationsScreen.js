@@ -3,46 +3,67 @@ import { View, Text, TouchableOpacity, StyleSheet, ScrollView, StatusBar, Switch
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as Notifications from 'expo-notifications';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { isGoalAlertsEnabled, setGoalAlertsEnabled } from '../services/notifications';
 
 const WATER_CHANNEL_ID = 'water-reminder';
+const WATER_IDS_KEY = 'water_reminder_ids';
 
 async function requestPermissions() {
   const { status } = await Notifications.requestPermissionsAsync();
   return status === 'granted';
 }
 
+// Schedule one notification per active hour (7 AM – 10 PM) using daily calendar triggers
 async function scheduleWaterReminders() {
   await cancelWaterReminders();
 
   if (Platform.OS === 'android') {
     await Notifications.setNotificationChannelAsync(WATER_CHANNEL_ID, {
       name: 'Water Reminders',
-      importance: Notifications.AndroidImportance.DEFAULT,
+      importance: Notifications.AndroidImportance.HIGH,
       sound: 'default',
     });
   }
 
-  await Notifications.scheduleNotificationAsync({
-    content: {
-      title: '💧 Time to hydrate!',
-      body: 'Drink a glass of water to stay on track.',
-      sound: 'default',
-      ...(Platform.OS === 'android' && { channelId: WATER_CHANNEL_ID }),
-    },
-    trigger: {
-      type: Notifications.SchedulableTriggerInputTypes.TIME_INTERVAL,
-      seconds: 3600,
-      repeats: true,
-    },
-  });
+  const hours = [7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22];
+  const ids = [];
+
+  for (const hour of hours) {
+    const id = await Notifications.scheduleNotificationAsync({
+      content: {
+        title: '💧 Time to hydrate!',
+        body: 'Drink a glass of water to stay on track.',
+        sound: 'default',
+        data: { waterReminder: true },
+        ...(Platform.OS === 'android' && { channelId: WATER_CHANNEL_ID }),
+      },
+      trigger: {
+        type: Notifications.SchedulableTriggerInputTypes.DAILY,
+        hour,
+        minute: 0,
+      },
+    });
+    ids.push(id);
+  }
+
+  await AsyncStorage.setItem(WATER_IDS_KEY, JSON.stringify(ids));
 }
 
 async function cancelWaterReminders() {
+  try {
+    const raw = await AsyncStorage.getItem(WATER_IDS_KEY);
+    const ids = raw ? JSON.parse(raw) : [];
+    for (const id of ids) {
+      await Notifications.cancelScheduledNotificationAsync(id).catch(() => {});
+    }
+    await AsyncStorage.removeItem(WATER_IDS_KEY);
+  } catch {}
+  // Also cancel any legacy ones matched by content
   const scheduled = await Notifications.getAllScheduledNotificationsAsync();
   for (const notif of scheduled) {
-    if (notif.content.title?.includes('hydrate') || notif.content.body?.includes('water')) {
-      await Notifications.cancelScheduledNotificationAsync(notif.identifier);
+    if (notif.content.data?.waterReminder || notif.content.title?.includes('hydrate')) {
+      await Notifications.cancelScheduledNotificationAsync(notif.identifier).catch(() => {});
     }
   }
 }
@@ -141,7 +162,7 @@ export default function NotificationsScreen({ navigation }) {
           {settings.waterReminder && (
             <View style={styles.waterBadge}>
               <Ionicons name="checkmark-circle" size={14} color="#45B7D1" />
-              <Text style={styles.waterBadgeText}>Active · Reminders every hour</Text>
+              <Text style={styles.waterBadgeText}>Active · Every hour, 7 AM – 10 PM</Text>
             </View>
           )}
         </View>
