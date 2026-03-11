@@ -29,4 +29,13 @@ export const mealsAPI = {
   update: (id, data) => api.patch(`/meals/${id}`, data),
 };
 
+export const waterAPI = {
+  get: (date) => api.get(`/water?date=${date}`),
+  set: (date, glasses) => api.put('/water', { date, glasses }),
+};
+
+export const exportAPI = {
+  exportData: () => api.get('/auth/export'),
+};
+
 export default api;

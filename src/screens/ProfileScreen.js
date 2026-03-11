@@ -1,10 +1,10 @@
 import { useState, useCallback } from 'react';
-import { View, Text, ScrollView, StyleSheet, TouchableOpacity, StatusBar, RefreshControl, Alert, ActivityIndicator } from 'react-native';
+import { View, Text, ScrollView, StyleSheet, TouchableOpacity, StatusBar, RefreshControl, Alert, ActivityIndicator, Share } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../context/AuthContext';
-import { mealsAPI } from '../services/api';
+import { mealsAPI, exportAPI } from '../services/api';
 import api from '../services/api';
 
 let RazorpayCheckout = null;
@@ -36,6 +36,7 @@ export default function ProfileScreen({ navigation }) {
   const [meals, setMeals] = useState([]);
   const [refreshing, setRefreshing] = useState(false);
   const [payLoading, setPayLoading] = useState(false);
+  const [exporting, setExporting] = useState(false);
 
   const handleTurnPro = async () => {
     if (!RazorpayCheckout) {
@@ -172,6 +173,22 @@ export default function ProfileScreen({ navigation }) {
           ))}
         </View>
 
+        <TouchableOpacity style={styles.exportBtn} onPress={async () => {
+          try {
+            setExporting(true);
+            const res = await exportAPI.exportData();
+            const json = JSON.stringify(res.data, null, 2);
+            await Share.share({ message: json, title: 'SnapCalorie Data Export' });
+          } catch {
+            Alert.alert('Export failed', 'Could not export your data. Please try again.');
+          } finally {
+            setExporting(false);
+          }
+        }} disabled={exporting}>
+          <Ionicons name="download-outline" size={20} color="#4ECDC4" />
+          <Text style={styles.exportText}>{exporting ? 'Exporting…' : 'Export My Data'}</Text>
+        </TouchableOpacity>
+
         <TouchableOpacity style={styles.logoutBtn} onPress={logout}>
           <Ionicons name="log-out-outline" size={20} color="#ff4444" />
           <Text style={styles.logoutText}>Sign Out</Text>
@@ -203,6 +220,8 @@ const styles = StyleSheet.create({
   menuBorder: { borderBottomWidth: 1, borderBottomColor: '#f5f5f5' },
   menuIcon: { width: 36, height: 36, borderRadius: 10, alignItems: 'center', justifyContent: 'center' },
   menuLabel: { flex: 1, fontSize: 14, fontWeight: '500', color: '#333' },
+  exportBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, marginHorizontal: 16, marginTop: 12, backgroundColor: '#fff', borderRadius: 20, padding: 16, borderWidth: 1, borderColor: '#d0f5f2' },
+  exportText: { fontSize: 15, fontWeight: '700', color: '#4ECDC4' },
   logoutBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, marginHorizontal: 16, marginTop: 12, backgroundColor: '#fff', borderRadius: 20, padding: 16, borderWidth: 1, borderColor: '#ffdddd' },
   logoutText: { color: '#ff4444', fontWeight: '700', fontSize: 15 },
   proCard: { flexDirection: 'row', alignItems: 'center', marginHorizontal: 16, marginTop: 12, backgroundColor: '#FF6B35', borderRadius: 20, padding: 16, gap: 12 },
