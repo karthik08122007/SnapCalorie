@@ -1,10 +1,16 @@
 import { useState, useCallback } from 'react';
-import { View, Text, ScrollView, StyleSheet, TouchableOpacity, StatusBar, RefreshControl } from 'react-native';
+import { View, Text, ScrollView, StyleSheet, TouchableOpacity, StatusBar, RefreshControl, Alert, ActivityIndicator } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../context/AuthContext';
 import { mealsAPI } from '../services/api';
+import api from '../services/api';
+
+let RazorpayCheckout = null;
+try {
+  RazorpayCheckout = require('react-native-razorpay').default;
+} catch {}
 
 function computeStreak(meals) {
   const dates = new Set(meals.map(m => new Date(m.analyzed_at).toDateString()));
@@ -25,10 +31,53 @@ function computeStreak(meals) {
 }
 
 export default function ProfileScreen({ navigation }) {
-  const { user, logout } = useAuth();
+  const { user, logout, updateProfile } = useAuth();
   const insets = useSafeAreaInsets();
   const [meals, setMeals] = useState([]);
   const [refreshing, setRefreshing] = useState(false);
+  const [payLoading, setPayLoading] = useState(false);
+
+  const handleTurnPro = async () => {
+    if (!RazorpayCheckout) {
+      Alert.alert('Not Supported', 'Payments are not available in Expo Go. Please use the installed app.');
+      return;
+    }
+    setPayLoading(true);
+    try {
+      const orderRes = await api.post('/subscription/create-order');
+      const { order } = orderRes.data.data;
+      const options = {
+        description: 'SnapCalorie Pro — Monthly',
+        currency: order.currency,
+        key: process.env.EXPO_PUBLIC_RAZORPAY_KEY_ID,
+        amount: order.amount,
+        name: 'SnapCalorie',
+        order_id: order.id,
+        prefill: { email: user?.email || '', name: user?.name || '', contact: '' },
+        theme: { color: '#FF6B35' },
+      };
+      const paymentData = await RazorpayCheckout.open(options);
+      await api.post('/subscription/verify-payment', {
+        razorpay_order_id: paymentData.razorpay_order_id,
+        razorpay_payment_id: paymentData.razorpay_payment_id,
+        razorpay_signature: paymentData.razorpay_signature,
+      });
+      await updateProfile({ plan: 'pro' });
+      Alert.alert('🎉 Welcome to Pro!', 'You now have unlimited AI scans and all Pro features.');
+    } catch (error) {
+      if (error?.code === 2) return;
+      let msg = 'Something went wrong. Please try again.';
+      try {
+        const parsed = JSON.parse(error?.description || '{}');
+        msg = parsed?.error?.reason === 'payment_cancelled'
+          ? 'Payment was cancelled.'
+          : parsed?.error?.description || msg;
+      } catch { msg = error?.description || msg; }
+      Alert.alert('Payment Failed', msg);
+    } finally {
+      setPayLoading(false);
+    }
+  };
 
   const fetchMeals = useCallback(async () => {
     try {
@@ -76,6 +125,23 @@ export default function ProfileScreen({ navigation }) {
           <Text style={styles.name}>{user?.name || 'User'}</Text>
           <Text style={styles.email}>{user?.email || ''}</Text>
         </View>
+
+        {user?.plan !== 'pro' ? (
+          <TouchableOpacity style={styles.proCard} onPress={handleTurnPro} disabled={payLoading}>
+            <View style={styles.proCardLeft}>
+              <Text style={styles.proCardTitle}>Upgrade to Pro ✨</Text>
+              <Text style={styles.proCardSub}>Unlimited scans · Advanced insights</Text>
+            </View>
+            {payLoading
+              ? <ActivityIndicator color="#fff" />
+              : <View style={styles.proCardBtn}><Text style={styles.proCardBtnText}>₹39/mo</Text></View>
+            }
+          </TouchableOpacity>
+        ) : (
+          <View style={styles.proBadgeCard}>
+            <Text style={styles.proBadgeText}>✨ You're on Pro</Text>
+          </View>
+        )}
 
         <View style={styles.statsRow}>
           {[
@@ -139,4 +205,12 @@ const styles = StyleSheet.create({
   menuLabel: { flex: 1, fontSize: 14, fontWeight: '500', color: '#333' },
   logoutBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, marginHorizontal: 16, marginTop: 12, backgroundColor: '#fff', borderRadius: 20, padding: 16, borderWidth: 1, borderColor: '#ffdddd' },
   logoutText: { color: '#ff4444', fontWeight: '700', fontSize: 15 },
+  proCard: { flexDirection: 'row', alignItems: 'center', marginHorizontal: 16, marginTop: 12, backgroundColor: '#FF6B35', borderRadius: 20, padding: 16, gap: 12 },
+  proCardLeft: { flex: 1 },
+  proCardTitle: { fontSize: 15, fontWeight: '800', color: '#fff' },
+  proCardSub: { fontSize: 12, color: 'rgba(255,255,255,0.8)', marginTop: 2 },
+  proCardBtn: { backgroundColor: 'rgba(255,255,255,0.25)', borderRadius: 12, paddingHorizontal: 12, paddingVertical: 6 },
+  proCardBtnText: { color: '#fff', fontWeight: '800', fontSize: 14 },
+  proBadgeCard: { marginHorizontal: 16, marginTop: 12, backgroundColor: '#FFF3EE', borderRadius: 20, padding: 14, alignItems: 'center', borderWidth: 1, borderColor: '#FF6B35' },
+  proBadgeText: { color: '#FF6B35', fontWeight: '700', fontSize: 14 },
 });

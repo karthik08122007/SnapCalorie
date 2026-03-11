@@ -289,7 +289,14 @@ export default function HomeScreen() {
         <View style={styles.header}>
           <Text style={styles.brand}>SnapCalorie</Text>
           <View style={styles.headerRight}>
-            <Text style={styles.streak}>🔥 {streak}</Text>
+            <View style={styles.streakRow}>
+              <Text style={styles.streak}>🔥 {streak}</Text>
+              <View style={[styles.planBadge, user?.plan === 'pro' && styles.planBadgePro]}>
+                <Text style={[styles.planBadgeText, user?.plan === 'pro' && styles.planBadgeTextPro]}>
+                  {user?.plan === 'pro' ? 'Pro' : 'Free'}
+                </Text>
+              </View>
+            </View>
             {scansLeft !== null && (
               <TouchableOpacity
                 style={[styles.scanBadge, scansLeft <= 3 && styles.scanBadgeLow]}
@@ -411,6 +418,11 @@ const styles = StyleSheet.create({
   header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: 20, backgroundColor: '#fff' },
   brand: { fontSize: 22, fontWeight: '800', color: '#FF6B35' },
   streak: { fontSize: 16, fontWeight: '700', color: '#FF6B35' },
+  streakRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  planBadge: { backgroundColor: '#f0f0f0', borderRadius: 10, paddingHorizontal: 8, paddingVertical: 2 },
+  planBadgePro: { backgroundColor: '#FF6B35' },
+  planBadgeText: { fontSize: 11, fontWeight: '700', color: '#999' },
+  planBadgeTextPro: { color: '#fff' },
   calendarWrap: { backgroundColor: '#fff', borderBottomWidth: 1, borderBottomColor: '#f0f0f0', paddingBottom: 12 },
   monthLabel: { textAlign: 'center', fontSize: 13, fontWeight: '600', color: '#999', paddingTop: 8 },
   weekStrip: { flexDirection: 'row', justifyContent: 'space-around', paddingVertical: 8, paddingHorizontal: 8 },
