@@ -3,7 +3,7 @@
  * A capturable card shown before sharing a meal.
  * Rendered inside a ViewShot ref in MealDetailScreen.
  */
-import { View, Text, StyleSheet, Image } from 'react-native';
+import { View, Text, StyleSheet } from 'react-native';
 
 export default function MealShareCard({ meal, healthScore, healthMessage }) {
   return (

@@ -1,5 +1,5 @@
 import { useState, useRef } from 'react';
-import { View, Text, ScrollView, StyleSheet, Image, TouchableOpacity, Alert, StatusBar, ActivityIndicator, Modal } from 'react-native';
+import { View, Text, ScrollView, StyleSheet, Image, TouchableOpacity, Alert, StatusBar, ActivityIndicator } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { mealsAPI } from '../services/api';

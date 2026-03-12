@@ -53,7 +53,14 @@ Notifications.setNotificationCategoryAsync('water_reminder', [
 ]);
 
 function Root() {
-  const { loading } = useAuth();
+  const { loading, user } = useAuth();
+
+  // Track app_opened only after auth resolves with a logged-in user
+  useEffect(() => {
+    if (!loading && user) {
+      trackEvent('app_opened', { timestamp: new Date().toISOString() });
+    }
+  }, [loading, user]);
 
   useEffect(() => {
     const sub = Notifications.addNotificationResponseReceivedListener(async response => {
@@ -98,10 +105,6 @@ function Root() {
 
 export default function App() {
   const [splashDone, setSplashDone] = useState(false);
-
-  useEffect(() => {
-    trackEvent('app_opened', { timestamp: new Date().toISOString() });
-  }, []);
 
   return (
     <SafeAreaProvider>
