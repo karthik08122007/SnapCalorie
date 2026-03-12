@@ -45,7 +45,7 @@ export default function LoginScreen({ navigation }) {
       } else if (err.code === statusCodes.PLAY_SERVICES_NOT_AVAILABLE) {
         setError('Google Play Services not available');
       } else {
-        setError(err.response?.data?.message || 'Google sign-in failed');
+        setError(err.response?.data?.message || err.message || `Google sign-in failed (code: ${err.code})`);
       }
     } finally {
       setGoogleLoading(false);
@@ -82,6 +82,10 @@ export default function LoginScreen({ navigation }) {
               <Ionicons name={showPassword ? 'eye-off-outline' : 'eye-outline'} size={20} color="#999" />
             </TouchableOpacity>
           </View>
+
+          <TouchableOpacity onPress={() => navigation.navigate('ForgotPassword')} style={styles.forgotWrap}>
+            <Text style={styles.forgot}>Forgot password?</Text>
+          </TouchableOpacity>
 
           <TouchableOpacity style={styles.btn} onPress={handle} disabled={loading}>
             <Text style={styles.btnText}>{loading ? 'Signing in...' : 'Sign In'}</Text>
@@ -126,6 +130,8 @@ const styles = StyleSheet.create({
   googleBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10, borderWidth: 1, borderColor: '#eee', borderRadius: 12, padding: 14, backgroundColor: '#fff', marginBottom: 20 },
   googleIcon: { fontSize: 18, fontWeight: '800', color: '#4285F4' },
   googleText: { fontSize: 15, fontWeight: '600', color: '#333' },
+  forgotWrap: { alignSelf: 'flex-end', marginBottom: 12, marginTop: -4 },
+  forgot: { color: '#FF6B35', fontSize: 13, fontWeight: '600' },
   switch: { textAlign: 'center', color: '#999', fontSize: 14 },
   link: { color: '#FF6B35', fontWeight: '700' },
 });

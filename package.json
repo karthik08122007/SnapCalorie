@@ -39,5 +39,8 @@
     "react-native-svg": "^15.15.3",
     "react-native-vector-icons": "^10.3.0"
   },
-  "private": true
+  "private": true,
+  "devDependencies": {
+    "sharp": "^0.34.5"
+  }
 }

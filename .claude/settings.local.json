@@ -1,0 +1,24 @@
+{
+  "permissions": {
+    "allow": [
+      "Read(//c/Users/KARTHIK/snapcalorie-backend/prisma/**)",
+      "Read(//c/Users/KARTHIK/snapcalorie-backend/src/controllers/**)",
+      "Read(//c/Users/KARTHIK/snapcalorie-backend/src/**)",
+      "Read(//c/Users/KARTHIK/snapcalorie-backend/**)",
+      "Bash(npx prisma:*)",
+      "Bash(railway variables:*)",
+      "Bash(railway whoami:*)",
+      "Bash(railway redeploy:*)",
+      "Bash(railway up:*)",
+      "Bash(railway logs:*)",
+      "Bash(npm install:*)"
+    ],
+    "additionalDirectories": [
+      "C:\\Users\\KARTHIK\\snapcalorie-backend\\prisma\\migrations",
+      "C:\\Users\\KARTHIK\\snapcalorie-backend\\src\\routes",
+      "C:\\Users\\KARTHIK\\snapcalorie-backend\\src\\controllers",
+      "C:\\Users\\KARTHIK\\snapcalorie-backend\\src\\services",
+      "C:\\Users\\KARTHIK\\snapcalorie-backend"
+    ]
+  }
+}

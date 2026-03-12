@@ -15,6 +15,8 @@ import PrivacyScreen from '../screens/PrivacyScreen';
 import HelpSupportScreen from '../screens/HelpSupportScreen';
 import LoginScreen from '../screens/LoginScreen';
 import RegisterScreen from '../screens/RegisterScreen';
+import ForgotPasswordScreen from '../screens/ForgotPasswordScreen';
+import ResetPasswordScreen from '../screens/ResetPasswordScreen';
 import LogMealScreen from '../screens/LogMealScreen';
 import MealDetailScreen from '../screens/MealDetailScreen';
 import MealReviewScreen from '../screens/MealReviewScreen';
@@ -122,6 +124,8 @@ export default function AppNavigator() {
           <>
             <Stack.Screen name="Login" component={LoginScreen} />
             <Stack.Screen name="Register" component={RegisterScreen} />
+            <Stack.Screen name="ForgotPassword" component={ForgotPasswordScreen} />
+            <Stack.Screen name="ResetPassword" component={ResetPasswordScreen} />
           </>
         ) : !onboarded ? (
           <>

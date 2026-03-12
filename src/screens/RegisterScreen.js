@@ -3,14 +3,27 @@ import { View, Text, TextInput, TouchableOpacity, StyleSheet, SafeAreaView, Keyb
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../context/AuthContext';
 
+// Google Sign-In requires a native build — gracefully unavailable in Expo Go
+let GoogleSignin = null;
+let statusCodes = {};
+try {
+  const googleModule = require('@react-native-google-signin/google-signin');
+  GoogleSignin = googleModule.GoogleSignin;
+  statusCodes = googleModule.statusCodes;
+  GoogleSignin.configure({ webClientId: process.env.EXPO_PUBLIC_GOOGLE_CLIENT_ID });
+} catch {
+  // Native module not available (Expo Go) — Google Sign-In will show "coming soon"
+}
+
 export default function RegisterScreen({ navigation }) {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [googleLoading, setGoogleLoading] = useState(false);
   const [error, setError] = useState('');
-  const { register } = useAuth();
+  const { register, googleLogin } = useAuth();
 
   const handle = async () => {
     setLoading(true);
@@ -21,6 +34,34 @@ export default function RegisterScreen({ navigation }) {
       setError(err.response?.data?.message || 'Registration failed');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleGoogleSignUp = async () => {
+    if (!GoogleSignin) {
+      Alert.alert('Coming Soon', 'Google Sign-Up will be available in the next update.');
+      return;
+    }
+    setGoogleLoading(true);
+    setError('');
+    try {
+      await GoogleSignin.hasPlayServices({ showPlayServicesUpdateDialog: true });
+      const result = await GoogleSignin.signIn();
+      if (result.type === 'success') {
+        await googleLogin(result.data.idToken);
+      }
+    } catch (err) {
+      if (err.code === statusCodes.SIGN_IN_CANCELLED) {
+        // user cancelled, do nothing
+      } else if (err.code === statusCodes.IN_PROGRESS) {
+        setError('Sign in already in progress');
+      } else if (err.code === statusCodes.PLAY_SERVICES_NOT_AVAILABLE) {
+        setError('Google Play Services not available');
+      } else {
+        setError(err.response?.data?.message || err.message || `Google sign-up failed (code: ${err.code})`);
+      }
+    } finally {
+      setGoogleLoading(false);
     }
   };
 
@@ -54,9 +95,9 @@ export default function RegisterScreen({ navigation }) {
             <View style={styles.divider} />
           </View>
 
-          <TouchableOpacity style={styles.googleBtn} onPress={() => Alert.alert('Coming Soon', 'Google Sign-Up will be available in the next update.')}>
+          <TouchableOpacity style={styles.googleBtn} onPress={handleGoogleSignUp} disabled={googleLoading}>
             <Text style={styles.googleIcon}>G</Text>
-            <Text style={styles.googleText}>Sign up with Google</Text>
+            <Text style={styles.googleText}>{googleLoading ? 'Signing up...' : 'Sign up with Google'}</Text>
           </TouchableOpacity>
 
           <TouchableOpacity onPress={() => navigation.navigate('Login')}>

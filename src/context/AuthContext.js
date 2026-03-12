@@ -56,8 +56,10 @@ export const AuthProvider = ({ children }) => {
     global.authToken = token;
     setToken(token);
     setUser(user);
-    setOnboarded(true);
-    await saveSession(token, user, true);
+    // New Google users haven't set body stats — send them through onboarding
+    const isNewUser = !user.age && !user.weightKg && !user.heightCm;
+    setOnboarded(!isNewUser);
+    await saveSession(token, user, !isNewUser);
     return user;
   };
 
@@ -67,8 +69,10 @@ export const AuthProvider = ({ children }) => {
     global.authToken = token;
     setToken(token);
     setUser(user);
-    setOnboarded(true);
-    await saveSession(token, user, true);
+    // Existing users who completed onboarding have body stats set
+    const hasOnboarded = !!(user.age || user.weightKg || user.heightCm || user.goal);
+    setOnboarded(hasOnboarded);
+    await saveSession(token, user, hasOnboarded);
     return user;
   };
 

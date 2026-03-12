@@ -17,6 +17,8 @@ export const authAPI = {
   me: () => api.get('/auth/me'),
   updateProfile: (data) => api.patch('/auth/me', data),
   deleteAccount: (password) => api.delete('/auth/account', { data: { password } }),
+  forgotPassword: (email) => api.post('/auth/forgot-password', { email }),
+  resetPassword: (email, otp, newPassword) => api.post('/auth/reset-password', { email, otp, newPassword }),
 };
 
 export const mealsAPI = {
