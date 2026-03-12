@@ -134,7 +134,7 @@ function MacroBreakdownCard({ protein, carbs, fat }) {
   );
 }
 
-export default function HomeScreen() {
+export default function HomeScreen({ navigation }) {
   const { user } = useAuth();
   const insets = useSafeAreaInsets();
   const [meals, setMeals] = useState([]);
@@ -387,7 +387,7 @@ export default function HomeScreen() {
             </View>
           ) : (
             selectedMeals.map((meal, i) => (
-              <View key={i} style={styles.mealRow}>
+              <TouchableOpacity key={i} style={styles.mealRow} onPress={() => navigation.navigate('Diary', { screen: 'MealDetail', params: { meal } })}>
                 <View style={styles.mealThumb}>
                   <MealThumb imageUrl={meal.image_url} />
                 </View>
@@ -403,7 +403,7 @@ export default function HomeScreen() {
                 <Text style={styles.mealTime}>
                   {new Date(meal.analyzed_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                 </Text>
-              </View>
+              </TouchableOpacity>
             ))
           )}
         </View>

@@ -17,6 +17,7 @@ import LoginScreen from '../screens/LoginScreen';
 import RegisterScreen from '../screens/RegisterScreen';
 import ForgotPasswordScreen from '../screens/ForgotPasswordScreen';
 import ResetPasswordScreen from '../screens/ResetPasswordScreen';
+import ChangePasswordScreen from '../screens/ChangePasswordScreen';
 import LogMealScreen from '../screens/LogMealScreen';
 import MealDetailScreen from '../screens/MealDetailScreen';
 import MealReviewScreen from '../screens/MealReviewScreen';
@@ -66,6 +67,7 @@ function ProfileStackScreen() {
       <ProfileStack.Screen name="Notifications" component={NotificationsScreen} />
       <ProfileStack.Screen name="Privacy" component={PrivacyScreen} />
       <ProfileStack.Screen name="HelpSupport" component={HelpSupportScreen} />
+      <ProfileStack.Screen name="ChangePassword" component={ChangePasswordScreen} />
     </ProfileStack.Navigator>
   );
 }

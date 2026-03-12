@@ -1,10 +1,12 @@
 import { useState, useCallback } from 'react';
-import { View, Text, ScrollView, StyleSheet, TouchableOpacity, StatusBar, RefreshControl, Alert, ActivityIndicator, Share } from 'react-native';
+import { View, Text, ScrollView, StyleSheet, TouchableOpacity, StatusBar, RefreshControl, Alert, ActivityIndicator } from 'react-native';
+import * as FileSystem from 'expo-file-system';
+import * as Sharing from 'expo-sharing';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../context/AuthContext';
-import { mealsAPI, exportAPI } from '../services/api';
+import { mealsAPI } from '../services/api';
 import api from '../services/api';
 
 let RazorpayCheckout = null;
@@ -102,6 +104,7 @@ export default function ProfileScreen({ navigation }) {
   const menuItems = [
     { icon: 'person-outline', label: 'Edit Profile', color: '#FF6B35', screen: 'EditProfile' },
     { icon: 'flag-outline', label: 'My Goals', color: '#4ECDC4', screen: 'MyGoals' },
+    { icon: 'key-outline', label: 'Change Password', color: '#9B59B6', screen: 'ChangePassword' },
     { icon: 'notifications-outline', label: 'Notifications', color: '#45B7D1', screen: 'Notifications' },
     { icon: 'shield-outline', label: 'Privacy', color: '#96CEB4', screen: 'Privacy' },
     { icon: 'help-circle-outline', label: 'Help & Support', color: '#FFD93D', screen: 'HelpSupport' },
@@ -176,9 +179,14 @@ export default function ProfileScreen({ navigation }) {
         <TouchableOpacity style={styles.exportBtn} onPress={async () => {
           try {
             setExporting(true);
-            const res = await exportAPI.exportData();
-            const json = JSON.stringify(res.data, null, 2);
-            await Share.share({ message: json, title: 'SnapCalorie Data Export' });
+            const API_BASE = (process.env.EXPO_PUBLIC_API_URL || 'https://snapcalorie-backend-production.up.railway.app/api');
+            const fileUri = FileSystem.cacheDirectory + 'snapcalorie-export.pdf';
+            const result = await FileSystem.downloadAsync(
+              `${API_BASE}/auth/export`,
+              fileUri,
+              { headers: { Authorization: `Bearer ${global.authToken}` } }
+            );
+            await Sharing.shareAsync(result.uri, { mimeType: 'application/pdf', dialogTitle: 'SnapCalorie Data Export', UTI: 'com.adobe.pdf' });
           } catch {
             Alert.alert('Export failed', 'Could not export your data. Please try again.');
           } finally {

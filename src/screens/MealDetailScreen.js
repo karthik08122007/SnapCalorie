@@ -4,7 +4,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { mealsAPI } from '../services/api';
 
-const BASE_URL = 'https://snapcalorie-backend-production.up.railway.app';
+const BASE_URL = (process.env.EXPO_PUBLIC_API_URL || 'https://snapcalorie-backend-production.up.railway.app/api').replace('/api', '');
 
 export default function MealDetailScreen({ route, navigation }) {
   const { meal } = route.params;

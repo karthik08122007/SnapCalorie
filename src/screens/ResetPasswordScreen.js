@@ -14,6 +14,7 @@ export default function ResetPasswordScreen({ navigation, route }) {
   const handle = async () => {
     if (!otp.trim() || otp.length !== 6) return setError('Enter the 6-digit OTP from your email.');
     if (newPassword.length < 8) return setError('Password must be at least 8 characters.');
+    if (!/[A-Z]/.test(newPassword) || !/[0-9]/.test(newPassword)) return setError('Password must contain at least one uppercase letter and one number.');
     setLoading(true);
     setError('');
     try {

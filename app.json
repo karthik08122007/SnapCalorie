@@ -51,9 +51,11 @@
         "expo-notifications",
         {
           "icon": "./assets/android-icon-monochrome.png",
-          "color": "#FF6B35"
+          "color": "#FF6B35",
+          "sounds": ["./assets/sounds/water-reminder.mp3"]
         }
-      ]
+      ],
+      "expo-sharing"
     ],
     "extra": {
       "eas": {
