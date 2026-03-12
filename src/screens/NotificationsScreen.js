@@ -34,7 +34,7 @@ async function scheduleWaterReminders(intervalMinutes = 60) {
     await Notifications.setNotificationChannelAsync(WATER_CHANNEL_ID, {
       name: 'Water Reminders',
       importance: Notifications.AndroidImportance.HIGH,
-      sound: 'water-reminder.mp3',
+      sound: 'water_reminder.mp3',
     });
   }
 
@@ -51,7 +51,7 @@ async function scheduleWaterReminders(intervalMinutes = 60) {
       content: {
         title: '💧 Time to hydrate!',
         body: 'Drink a glass of water to stay on track.',
-        sound: 'water-reminder.mp3',
+        sound: 'water_reminder.mp3',
         categoryIdentifier: 'water_reminder',
         data: { waterReminder: true },
         ...(Platform.OS === 'android' && { channelId: WATER_CHANNEL_ID }),
