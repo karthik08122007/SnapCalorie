@@ -5,6 +5,8 @@ import * as ImagePicker from 'expo-image-picker';
 import { Ionicons } from '@expo/vector-icons';
 import { mealsAPI } from '../services/api';
 import { getFoodHistory } from '../services/foodHistory';
+import { compressMealImage } from '../utils/imageCompressor';
+import { trackEvent } from '../utils/analytics';
 
 export default function LogMealScreen({ navigation }) {
   const insets = useSafeAreaInsets();
@@ -40,12 +42,17 @@ export default function LogMealScreen({ navigation }) {
 
   const analyzeImage = async (asset) => {
     setAnalyzing(true);
+    const scanStart = Date.now();
+    trackEvent('meal_scan_started', { source: 'photo' });
     try {
+      // Compress image before upload (resize to 1024px, JPEG 0.7)
+      const compressedUri = await compressMealImage(asset.uri);
       const formData = new FormData();
-      formData.append('image', { uri: asset.uri, type: 'image/jpeg', name: 'meal.jpg' });
+      formData.append('image', { uri: compressedUri, type: 'image/jpeg', name: 'meal.jpg' });
       formData.append('mealType', 'Snack');
       const res = await mealsAPI.analyze(formData);
       const meal = res.data?.data || res.data;
+      trackEvent('meal_scan_completed', { scan_time_ms: Date.now() - scanStart, source: 'photo' });
       navigation.navigate('MealReview', { meal, imageUri: asset.uri });
     } catch (err) {
       Alert.alert('Error', err.response?.data?.message || 'Analysis failed');
@@ -57,9 +64,12 @@ export default function LogMealScreen({ navigation }) {
   const analyzeText = async () => {
     if (!query.trim()) return;
     setAnalyzing(true);
+    const scanStart = Date.now();
+    trackEvent('meal_scan_started', { source: 'text' });
     try {
       const res = await mealsAPI.analyzeText(query, 'Snack');
       const meal = res.data?.data || res.data;
+      trackEvent('meal_scan_completed', { scan_time_ms: Date.now() - scanStart, source: 'text' });
       navigation.navigate('MealReview', { meal, imageUri: null });
     } catch (err) {
       Alert.alert('Error', err.response?.data?.message || 'Analysis failed');

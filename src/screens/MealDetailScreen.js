@@ -1,8 +1,13 @@
-import { useState } from 'react';
-import { View, Text, ScrollView, StyleSheet, Image, TouchableOpacity, Alert, StatusBar, ActivityIndicator } from 'react-native';
+import { useState, useRef } from 'react';
+import { View, Text, ScrollView, StyleSheet, Image, TouchableOpacity, Alert, StatusBar, ActivityIndicator, Modal } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { mealsAPI } from '../services/api';
+import ViewShot from 'react-native-view-shot';
+import * as Sharing from 'expo-sharing';
+import MealShareCard from '../components/MealShareCard';
+import { calculateMealHealthScore } from '../utils/mealHealthScore';
+import { trackEvent } from '../utils/analytics';
 
 const BASE_URL = (process.env.EXPO_PUBLIC_API_URL || 'https://snapcalorie-backend-production.up.railway.app/api').replace('/api', '');
 
@@ -11,6 +16,39 @@ export default function MealDetailScreen({ route, navigation }) {
   const insets = useSafeAreaInsets();
   const [imgError, setImgError] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [sharing, setSharing] = useState(false);
+  const [showShareCard, setShowShareCard] = useState(false);
+  const shareCardRef = useRef(null);
+
+  // Calculate health score for this meal
+  const { score: healthScore, message: healthMessage } = calculateMealHealthScore({
+    calories: meal.calories,
+    protein_g: meal.protein_g,
+    carbs_g: meal.carbs_g,
+    fat_g: meal.fat_g,
+  });
+
+  const handleShare = async () => {
+    setShowShareCard(true);
+    // Wait one frame for the card to render, then capture
+    setTimeout(async () => {
+      try {
+        setSharing(true);
+        const uri = await shareCardRef.current?.capture();
+        setShowShareCard(false);
+        if (!uri) throw new Error('Capture failed');
+        const canShare = await Sharing.isAvailableAsync();
+        if (!canShare) { Alert.alert('Sharing not available on this device'); return; }
+        await Sharing.shareAsync(uri, { mimeType: 'image/png', dialogTitle: 'Share your meal' });
+        trackEvent('share_meal', { health_score: healthScore, calories: meal.calories });
+      } catch {
+        setShowShareCard(false);
+        Alert.alert('Share failed', 'Could not generate share card.');
+      } finally {
+        setSharing(false);
+      }
+    }, 300);
+  };
 
   const rawUrl = meal.image_url;
   const imageUri = rawUrl && !rawUrl.startsWith('http') ? `${BASE_URL}${rawUrl}` : rawUrl;
@@ -63,12 +101,20 @@ export default function MealDetailScreen({ route, navigation }) {
           <Ionicons name="arrow-back" size={24} color="#333" />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Meal Details</Text>
-        <TouchableOpacity onPress={handleDelete} style={styles.deleteBtn} disabled={deleting}>
-          {deleting
-            ? <ActivityIndicator size="small" color="#ff4444" />
-            : <Ionicons name="trash-outline" size={22} color="#ff4444" />
-          }
-        </TouchableOpacity>
+        <View style={{ flexDirection: 'row', gap: 4 }}>
+          <TouchableOpacity onPress={handleShare} style={styles.deleteBtn} disabled={sharing}>
+            {sharing
+              ? <ActivityIndicator size="small" color="#FF6B35" />
+              : <Ionicons name="share-outline" size={22} color="#FF6B35" />
+            }
+          </TouchableOpacity>
+          <TouchableOpacity onPress={handleDelete} style={styles.deleteBtn} disabled={deleting}>
+            {deleting
+              ? <ActivityIndicator size="small" color="#ff4444" />
+              : <Ionicons name="trash-outline" size={22} color="#ff4444" />
+            }
+          </TouchableOpacity>
+        </View>
       </View>
 
       <ScrollView showsVerticalScrollIndicator={false}>
@@ -129,11 +175,46 @@ export default function MealDetailScreen({ route, navigation }) {
               </View>
             </>
           )}
+
+          {/* Meal Health Score */}
+          <Text style={[styles.sectionTitle, { marginTop: 20 }]}>HEALTH SCORE</Text>
+          <View style={styles.healthScoreCard}>
+            <View style={styles.healthScoreLeft}>
+              <Text style={[styles.healthScoreNum, { color: healthScoreColor(healthScore) }]}>{healthScore}</Text>
+              <Text style={styles.healthScoreOf}>/10</Text>
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={[styles.healthScoreMsg, { color: healthScoreColor(healthScore) }]}>{healthMessage}</Text>
+              <TouchableOpacity style={styles.shareBtn} onPress={handleShare} disabled={sharing}>
+                {sharing
+                  ? <ActivityIndicator size="small" color="#fff" />
+                  : <Ionicons name="share-social-outline" size={16} color="#fff" />
+                }
+                <Text style={styles.shareBtnText}>{sharing ? 'Preparing...' : 'Share Meal'}</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
         </View>
         <View style={{ height: 100 }} />
       </ScrollView>
+
+      {/* Off-screen share card for capture */}
+      {showShareCard && (
+        <View style={{ position: 'absolute', top: -1000, left: 0 }} pointerEvents="none">
+          <ViewShot ref={shareCardRef} options={{ format: 'png', quality: 1 }}>
+            <MealShareCard meal={meal} healthScore={healthScore} healthMessage={healthMessage} />
+          </ViewShot>
+        </View>
+      )}
     </View>
   );
+}
+
+function healthScoreColor(score) {
+  if (score >= 8) return '#4CAF50';
+  if (score >= 6) return '#45B7D1';
+  if (score >= 4) return '#FF9800';
+  return '#FF6B6B';
 }
 
 const styles = StyleSheet.create({
@@ -165,4 +246,19 @@ const styles = StyleSheet.create({
   extraBorder: { borderBottomWidth: 1, borderBottomColor: '#f5f5f5' },
   extraLabel: { fontSize: 14, color: '#333', fontWeight: '500' },
   extraValue: { fontSize: 14, fontWeight: '700', color: '#333' },
+  healthScoreCard: {
+    backgroundColor: '#fff', borderRadius: 20, padding: 16, flexDirection: 'row',
+    alignItems: 'center', gap: 16, marginBottom: 8,
+    shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.06, shadowRadius: 8, elevation: 3,
+  },
+  healthScoreLeft: { alignItems: 'center' },
+  healthScoreNum: { fontSize: 40, fontWeight: '900', lineHeight: 44 },
+  healthScoreOf: { fontSize: 12, color: '#aaa', fontWeight: '600', marginTop: -4 },
+  healthScoreMsg: { fontSize: 13, fontWeight: '700', marginBottom: 10, lineHeight: 18 },
+  shareBtn: {
+    flexDirection: 'row', alignItems: 'center', gap: 6,
+    backgroundColor: '#FF6B35', borderRadius: 10, paddingHorizontal: 14, paddingVertical: 8,
+    alignSelf: 'flex-start',
+  },
+  shareBtnText: { color: '#fff', fontSize: 13, fontWeight: '700' },
 });

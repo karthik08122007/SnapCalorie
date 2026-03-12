@@ -7,6 +7,7 @@ import { AuthProvider, useAuth } from './src/context/AuthContext';
 import AppNavigator from './src/navigation/AppNavigator';
 import { waterAPI } from './src/services/api';
 import AppSplash from './src/components/AppSplash';
+import { trackEvent } from './src/utils/analytics';
 
 const GOAL_ALERTS_KEY = 'goal_alerts_enabled';
 
@@ -97,6 +98,10 @@ function Root() {
 
 export default function App() {
   const [splashDone, setSplashDone] = useState(false);
+
+  useEffect(() => {
+    trackEvent('app_opened', { timestamp: new Date().toISOString() });
+  }, []);
 
   return (
     <SafeAreaProvider>

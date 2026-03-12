@@ -3,6 +3,7 @@ import { View, Text, ScrollView, StyleSheet, Image, TouchableOpacity, RefreshCon
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
 import { mealsAPI, waterAPI } from '../services/api';
+import { trackEvent } from '../utils/analytics';
 
 const BASE_URL = (process.env.EXPO_PUBLIC_API_URL || 'https://snapcalorie-backend-production.up.railway.app/api').replace('/api', '');
 
@@ -39,6 +40,7 @@ export default function DiaryScreen({ navigation }) {
     setWaterState(prev => {
       const next = typeof updater === 'function' ? updater(prev) : updater;
       waterAPI.set(todayDate, next).catch(() => {});
+      if (next > prev) trackEvent('water_logged', { glasses: next });
       return next;
     });
   }, []);

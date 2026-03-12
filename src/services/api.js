@@ -40,4 +40,8 @@ export const exportAPI = {
   exportData: () => api.get('/auth/export'),
 };
 
+export const analyticsAPI = {
+  track: (eventName, metadata) => api.post('/analytics/track', { eventName, metadata }),
+};
+
 export default api;

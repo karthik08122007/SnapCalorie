@@ -8,6 +8,8 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { mealsAPI } from '../services/api';
 import { saveFoodToHistory, findSimilarFood } from '../services/foodHistory';
+import { PORTION_SIZES } from '../utils/portionHelper';
+import { trackEvent } from '../utils/analytics';
 
 const BASE_URL = (process.env.EXPO_PUBLIC_API_URL || 'https://snapcalorie-backend-production.up.railway.app/api').replace('/api', '');
 
@@ -140,6 +142,8 @@ export default function MealReviewScreen({ route, navigation }) {
   const [imgError, setImgError] = useState(false);
   const [showFullNutrition, setShowFullNutrition] = useState(false);
   const [swappingItemId, setSwappingItemId] = useState(null);
+  // Global portion size: applies a multiplier to all item totals
+  const [globalPortion, setGlobalPortion] = useState('medium');
 
   // Previous match banner
   const [prevMatch, setPrevMatch] = useState(null); // { food_name, calories, protein_g, carbs_g, fat_g }
@@ -157,16 +161,25 @@ export default function MealReviewScreen({ route, navigation }) {
   const [refineQuery, setRefineQuery] = useState('');
   const [refining, setRefining] = useState(false);
 
-  // Aggregate totals
-  const totals = useMemo(() => items.reduce(
-    (acc, item) => ({
-      calories: acc.calories + Math.round(item.calories * item.portion),
-      protein_g: acc.protein_g + Math.round(item.protein_g * item.portion),
-      carbs_g: acc.carbs_g + Math.round(item.carbs_g * item.portion),
-      fat_g: acc.fat_g + Math.round(item.fat_g * item.portion),
-    }),
-    { calories: 0, protein_g: 0, carbs_g: 0, fat_g: 0 }
-  ), [items]);
+  // Aggregate totals — per-item portion × global portion multiplier
+  const globalMultiplier = PORTION_SIZES[globalPortion]?.multiplier || 1;
+  const totals = useMemo(() => {
+    const raw = items.reduce(
+      (acc, item) => ({
+        calories: acc.calories + item.calories * item.portion,
+        protein_g: acc.protein_g + item.protein_g * item.portion,
+        carbs_g: acc.carbs_g + item.carbs_g * item.portion,
+        fat_g: acc.fat_g + item.fat_g * item.portion,
+      }),
+      { calories: 0, protein_g: 0, carbs_g: 0, fat_g: 0 }
+    );
+    return {
+      calories:  Math.round(raw.calories  * globalMultiplier),
+      protein_g: Math.round(raw.protein_g * globalMultiplier),
+      carbs_g:   Math.round(raw.carbs_g   * globalMultiplier),
+      fat_g:     Math.round(raw.fat_g     * globalMultiplier),
+    };
+  }, [items, globalMultiplier]);
 
   // Image
   const rawUrl = meal.image_url;
@@ -284,6 +297,7 @@ export default function MealReviewScreen({ route, navigation }) {
       fat_g: totals.fat_g,
       logged_at: new Date().toISOString(),
     });
+    trackEvent('meal_saved', { calories: totals.calories, portion_size: globalPortion });
     navigation.reset({ index: 0, routes: [{ name: 'Main' }] });
   };
 
@@ -397,6 +411,27 @@ export default function MealReviewScreen({ route, navigation }) {
               {cholesterol != null && <View style={styles.extraRow}><Text style={styles.extraLabel}>Cholesterol</Text><Text style={styles.extraVal}>{Math.round(cholesterol)} mg</Text></View>}
             </View>
           )}
+
+          {/* Global Portion Size selector */}
+          <View style={styles.portionSection}>
+            <Text style={styles.portionSectionLabel}>Portion Size</Text>
+            <View style={styles.portionSectionRow}>
+              {Object.entries(PORTION_SIZES).map(([key, { label, multiplier }]) => (
+                <TouchableOpacity
+                  key={key}
+                  style={[styles.portionSizeChip, globalPortion === key && styles.portionSizeChipActive]}
+                  onPress={() => setGlobalPortion(key)}
+                >
+                  <Text style={[styles.portionSizeChipText, globalPortion === key && styles.portionSizeChipTextActive]}>
+                    {label}
+                  </Text>
+                  <Text style={[styles.portionSizeMult, globalPortion === key && { color: '#FF6B35' }]}>
+                    {multiplier === 1 ? '×1' : `×${multiplier}`}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+          </View>
 
           {/* Per-item cards */}
           {items.map(item => (
@@ -550,6 +585,21 @@ const styles = StyleSheet.create({
   extraRow: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: '#f8f8f8' },
   extraLabel: { fontSize: 14, color: '#555' },
   extraVal: { fontSize: 14, fontWeight: '700', color: '#333' },
+  // Global portion size
+  portionSection: {
+    backgroundColor: '#fff', paddingHorizontal: 16, paddingVertical: 12,
+    borderBottomWidth: 1, borderBottomColor: '#f0f0f0',
+  },
+  portionSectionLabel: { fontSize: 12, fontWeight: '700', color: '#aaa', marginBottom: 8, letterSpacing: 0.5, textTransform: 'uppercase' },
+  portionSectionRow: { flexDirection: 'row', gap: 8 },
+  portionSizeChip: {
+    flex: 1, alignItems: 'center', paddingVertical: 10,
+    borderRadius: 12, borderWidth: 1.5, borderColor: '#eee', backgroundColor: '#fafafa',
+  },
+  portionSizeChipActive: { borderColor: '#FF6B35', backgroundColor: 'rgba(255,107,53,0.07)' },
+  portionSizeChipText: { fontSize: 14, fontWeight: '700', color: '#888' },
+  portionSizeChipTextActive: { color: '#FF6B35' },
+  portionSizeMult: { fontSize: 11, fontWeight: '600', color: '#ccc', marginTop: 2 },
   refineRow: {
     flexDirection: 'row', alignItems: 'center', gap: 8,
     margin: 16, padding: 14, backgroundColor: '#fff',
