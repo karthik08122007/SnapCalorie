@@ -35,7 +35,12 @@ export default function LoginScreen({ navigation }) {
       await GoogleSignin.hasPlayServices({ showPlayServicesUpdateDialog: true });
       const result = await GoogleSignin.signIn();
       if (result.type === 'success') {
-        await googleLogin(result.data.idToken);
+        const idToken = result.data?.idToken;
+        if (!idToken) {
+          setError('Google Sign-In configuration error. Please use email/password login.');
+          return;
+        }
+        await googleLogin(idToken);
       }
     } catch (err) {
       if (err.code === statusCodes.SIGN_IN_CANCELLED) {
@@ -44,6 +49,8 @@ export default function LoginScreen({ navigation }) {
         setError('Sign in already in progress');
       } else if (err.code === statusCodes.PLAY_SERVICES_NOT_AVAILABLE) {
         setError('Google Play Services not available');
+      } else if (err.code === statusCodes.DEVELOPER_ERROR || String(err.message).includes('DEVELOPER_ERROR')) {
+        setError('Google Sign-In is not configured for this build. Please use email/password login.');
       } else {
         setError(err.response?.data?.message || err.message || `Google sign-in failed (code: ${err.code})`);
       }

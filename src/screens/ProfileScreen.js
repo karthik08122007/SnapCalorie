@@ -56,7 +56,7 @@ export default function ProfileScreen({ navigation }) {
         amount: order.amount,
         name: 'SnapCalorie',
         order_id: order.id,
-        prefill: { email: user?.email || '', name: user?.name || '', contact: '' },
+        prefill: { email: user?.email || '', name: user?.name || '' },
         theme: { color: '#FF6B35' },
       };
       const paymentData = await RazorpayCheckout.open(options);
@@ -68,15 +68,16 @@ export default function ProfileScreen({ navigation }) {
       await updateProfile({ plan: 'pro' });
       Alert.alert('🎉 Welcome to Pro!', 'You now have unlimited AI scans and all Pro features.');
     } catch (error) {
-      if (error?.code === 2) return;
+      if (error?.code === 2) return; // user cancelled
       let msg = 'Something went wrong. Please try again.';
       try {
-        const parsed = JSON.parse(error?.description || '{}');
+        const desc = typeof error?.description === 'string' ? error.description : JSON.stringify(error?.description || '');
+        const parsed = JSON.parse(desc || '{}');
         msg = parsed?.error?.reason === 'payment_cancelled'
           ? 'Payment was cancelled.'
-          : parsed?.error?.description || msg;
-      } catch { msg = error?.description || msg; }
-      Alert.alert('Payment Failed', msg);
+          : parsed?.error?.description || error?.message || msg;
+      } catch { msg = error?.message || msg; }
+      Alert.alert('Payment Failed', String(msg));
     } finally {
       setPayLoading(false);
     }
@@ -186,6 +187,9 @@ export default function ProfileScreen({ navigation }) {
               fileUri,
               { headers: { Authorization: `Bearer ${global.authToken}` } }
             );
+            if (result.status !== 200) {
+              throw new Error(`Server returned ${result.status}`);
+            }
             await Sharing.shareAsync(result.uri, { mimeType: 'application/pdf', dialogTitle: 'SnapCalorie Data Export', UTI: 'com.adobe.pdf' });
           } catch {
             Alert.alert('Export failed', 'Could not export your data. Please try again.');

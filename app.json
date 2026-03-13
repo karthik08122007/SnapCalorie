@@ -52,16 +52,18 @@
         {
           "icon": "./assets/android-icon-monochrome.png",
           "color": "#FF6B35",
-          "sounds": ["./assets/sounds/water_reminder.mp3"]
+          "sounds": [
+            "./assets/sounds/water_reminder.mp3"
+          ]
         }
       ],
       "expo-sharing"
     ],
     "extra": {
       "eas": {
-        "projectId": "ccc18e10-4527-4138-a6b6-aad3b543f1e5"
+        "projectId": "5b297976-e266-46b7-8e44-2e6bee71250c"
       }
     },
-    "owner": "karthik22011"
+    "owner": "forr"
   }
 }

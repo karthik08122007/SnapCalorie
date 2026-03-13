@@ -3,8 +3,9 @@ import { View, Text, ScrollView, StyleSheet, StatusBar, useWindowDimensions, Ref
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
 import Svg, { Path, Rect, Circle, Line, Text as SvgText, Defs, LinearGradient, Stop, G } from 'react-native-svg';
-import { mealsAPI } from '../services/api';
+import { mealsAPI, waterAPI } from '../services/api';
 import { useAuth } from '../context/AuthContext';
+import { calculateDailyNutritionScore, getScoreMessage } from '../utils/nutritionScore';
 
 const DAY_LABELS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
@@ -388,6 +389,94 @@ function generateInsights(weekData, goalCalories) {
   return insights;
 }
 
+// ─── Daily Nutrition Score Card ───────────────────────────────────────────────
+function NutritionScoreCard({ score, breakdown, message, messageColor }) {
+  const bars = [
+    { label: 'Calories', value: breakdown.calories, max: 30, color: '#FF6B35' },
+    { label: 'Protein',  value: breakdown.protein,  max: 30, color: '#4ECDC4' },
+    { label: 'Carbs',    value: breakdown.carbs,     max: 20, color: '#45B7D1' },
+    { label: 'Fat',      value: breakdown.fat,       max: 10, color: '#FF6B6B' },
+    { label: 'Water',    value: breakdown.water,     max: 10, color: '#96CEB4' },
+  ];
+
+  return (
+    <View style={scoreStyles.card}>
+      <Text style={scoreStyles.title}>Daily Nutrition Score</Text>
+
+      {/* Score + ring */}
+      <View style={scoreStyles.scoreRow}>
+        <View style={[scoreStyles.scoreBadge, { borderColor: messageColor }]}>
+          <Text style={[scoreStyles.scoreNum, { color: messageColor }]}>{score}</Text>
+          <Text style={scoreStyles.scoreOf}>/100</Text>
+        </View>
+        <View style={scoreStyles.scoreRight}>
+          {/* Overall progress bar */}
+          <View style={scoreStyles.mainBarTrack}>
+            <View style={[scoreStyles.mainBarFill, { width: `${score}%`, backgroundColor: messageColor }]} />
+          </View>
+          <Text style={[scoreStyles.message, { color: messageColor }]}>{message}</Text>
+        </View>
+      </View>
+
+      {/* Breakdown bars */}
+      <View style={scoreStyles.breakdownWrap}>
+        {bars.map(b => (
+          <View key={b.label} style={scoreStyles.barRow}>
+            <Text style={scoreStyles.barLabel}>{b.label}</Text>
+            <View style={scoreStyles.barTrack}>
+              <View style={[scoreStyles.barFill, { width: `${(b.value / b.max) * 100}%`, backgroundColor: b.color }]} />
+            </View>
+            <Text style={scoreStyles.barPts}>{b.value}/{b.max}</Text>
+          </View>
+        ))}
+      </View>
+    </View>
+  );
+}
+
+const scoreStyles = StyleSheet.create({
+  card: {
+    backgroundColor: '#fff',
+    marginHorizontal: 16,
+    marginTop: 12,
+    borderRadius: 16,
+    padding: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.06,
+    shadowRadius: 8,
+    elevation: 3,
+  },
+  title: { fontSize: 15, fontWeight: '700', color: '#333', marginBottom: 12 },
+  scoreRow: { flexDirection: 'row', alignItems: 'center', gap: 14, marginBottom: 16 },
+  scoreBadge: {
+    width: 72,
+    height: 72,
+    borderRadius: 36,
+    borderWidth: 3,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  scoreNum: { fontSize: 26, fontWeight: '900', lineHeight: 28 },
+  scoreOf: { fontSize: 11, color: '#aaa', fontWeight: '600' },
+  scoreRight: { flex: 1 },
+  mainBarTrack: {
+    height: 10,
+    backgroundColor: '#f0f0f0',
+    borderRadius: 5,
+    overflow: 'hidden',
+    marginBottom: 8,
+  },
+  mainBarFill: { height: '100%', borderRadius: 5 },
+  message: { fontSize: 13, fontWeight: '700' },
+  breakdownWrap: { gap: 8 },
+  barRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  barLabel: { width: 58, fontSize: 11, color: '#888', fontWeight: '600' },
+  barTrack: { flex: 1, height: 7, backgroundColor: '#f0f0f0', borderRadius: 4, overflow: 'hidden' },
+  barFill: { height: '100%', borderRadius: 4 },
+  barPts: { width: 36, fontSize: 11, color: '#aaa', textAlign: 'right', fontWeight: '600' },
+});
+
 export default function InsightsScreen() {
   const { user } = useAuth();
   const insets = useSafeAreaInsets();
@@ -397,6 +486,7 @@ export default function InsightsScreen() {
   const [calSel, setCalSel] = useState(null);
   const [macroSel, setMacroSel] = useState(null);
   const [mealsSel, setMealsSel] = useState(null);
+  const [todayWater, setTodayWater] = useState(0);
 
   const goalCalories = (() => {
     if (user?.dailyCalorieGoal) return user.dailyCalorieGoal;
@@ -415,8 +505,13 @@ export default function InsightsScreen() {
 
   const fetchMeals = useCallback(async () => {
     try {
-      const res = await mealsAPI.getAll();
-      setMeals(res.data.data || []);
+      const todayDate = new Date().toISOString().split('T')[0];
+      const [mealsRes, waterRes] = await Promise.allSettled([
+        mealsAPI.getAll(),
+        waterAPI.get(todayDate),
+      ]);
+      if (mealsRes.status === 'fulfilled') setMeals(mealsRes.value.data.data || []);
+      if (waterRes.status === 'fulfilled') setTodayWater(waterRes.value.data.data?.glasses ?? 0);
     } catch {}
   }, []);
 
@@ -430,6 +525,28 @@ export default function InsightsScreen() {
 
   const weekData = buildWeekData(meals);
   const activeDays = weekData.filter(d => d.count > 0).length;
+
+  // Today's meals for the nutrition score
+  const todayStr = new Date().toDateString();
+  const todayMeals = meals.filter(m => new Date(m.analyzed_at).toDateString() === todayStr);
+  const todayCalories = todayMeals.reduce((s, m) => s + (m.calories || 0), 0);
+  const todayProtein  = todayMeals.reduce((s, m) => s + (m.protein_g || 0), 0);
+  const todayCarbs    = todayMeals.reduce((s, m) => s + (m.carbs_g || 0), 0);
+  const todayFat      = todayMeals.reduce((s, m) => s + (m.fat_g || 0), 0);
+  const proteinGoal   = user?.proteinGoal || 150;
+  const WATER_GOAL    = 8;
+
+  const { score, breakdown } = calculateDailyNutritionScore({
+    caloriesConsumed: todayCalories,
+    calorieGoal: goalCalories,
+    proteinConsumed: todayProtein,
+    proteinGoal,
+    carbsConsumed: todayCarbs,
+    fatConsumed: todayFat,
+    waterConsumed: todayWater,
+    waterGoal: WATER_GOAL,
+  });
+  const { message: scoreMessage, color: scoreColor } = getScoreMessage(score);
   const totalMeals = weekData.reduce((s, d) => s + d.count, 0);
   const avgCal = activeDays > 0 ? Math.round(weekData.reduce((s, d) => s + d.calories, 0) / activeDays) : 0;
   const bestDay = weekData.reduce((best, d) => d.calories > (best?.calories || 0) ? d : best, null);
@@ -460,6 +577,14 @@ export default function InsightsScreen() {
             </View>
           ))}
         </View>
+
+        {/* Daily Nutrition Score */}
+        <NutritionScoreCard
+          score={score}
+          breakdown={breakdown}
+          message={scoreMessage}
+          messageColor={scoreColor}
+        />
 
         {/* Daily Calories vs Goal */}
         <View style={styles.card}>

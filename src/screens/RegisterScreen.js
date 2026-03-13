@@ -48,7 +48,12 @@ export default function RegisterScreen({ navigation }) {
       await GoogleSignin.hasPlayServices({ showPlayServicesUpdateDialog: true });
       const result = await GoogleSignin.signIn();
       if (result.type === 'success') {
-        await googleLogin(result.data.idToken);
+        const idToken = result.data?.idToken;
+        if (!idToken) {
+          setError('Google Sign-In configuration error. Please use email/password login.');
+          return;
+        }
+        await googleLogin(idToken);
       }
     } catch (err) {
       if (err.code === statusCodes.SIGN_IN_CANCELLED) {
@@ -57,6 +62,8 @@ export default function RegisterScreen({ navigation }) {
         setError('Sign in already in progress');
       } else if (err.code === statusCodes.PLAY_SERVICES_NOT_AVAILABLE) {
         setError('Google Play Services not available');
+      } else if (err.code === statusCodes.DEVELOPER_ERROR || String(err.message).includes('DEVELOPER_ERROR')) {
+        setError('Google Sign-In is not configured for this build. Please use email/password login.');
       } else {
         setError(err.response?.data?.message || err.message || `Google sign-up failed (code: ${err.code})`);
       }
@@ -84,6 +91,7 @@ export default function RegisterScreen({ navigation }) {
               <Ionicons name={showPassword ? 'eye-off-outline' : 'eye-outline'} size={20} color="#999" />
             </TouchableOpacity>
           </View>
+          <Text style={styles.hint}>Min 8 characters, 1 uppercase letter, 1 number (e.g. Secret1)</Text>
 
           <TouchableOpacity style={styles.btn} onPress={handle} disabled={loading}>
             <Text style={styles.btnText}>{loading ? 'Creating...' : 'Create Account'}</Text>
@@ -130,4 +138,5 @@ const styles = StyleSheet.create({
   googleText: { fontSize: 15, fontWeight: '600', color: '#333' },
   switch: { textAlign: 'center', color: '#999', fontSize: 14 },
   link: { color: '#FF6B35', fontWeight: '700' },
+  hint: { fontSize: 11, color: '#999', marginTop: -6, marginBottom: 12, paddingHorizontal: 4 },
 });

@@ -210,7 +210,7 @@ export default function HomeScreen({ navigation }) {
     setRefreshing(false);
   };
 
-  const scansUsed = scanInfo?.used ?? (user?.scansUsed ?? user?.scans_used ?? null);
+  const scansUsed = scanInfo?.used ?? (user?.scanCount ?? null);
   const scansLimit = scanInfo?.limit ?? (user?.scanLimit ?? user?.scan_limit ?? 20);
   const scansLeft = scansUsed !== null ? scansLimit - scansUsed : null;
   const scanPlan = (scanInfo?.plan ?? user?.plan ?? 'FREE').toUpperCase();
