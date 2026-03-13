@@ -1,0 +1,47 @@
+{
+  "project_info": {
+    "project_number": "516050979709",
+    "project_id": "snapcalorie-android-2b36e",
+    "storage_bucket": "snapcalorie-android-2b36e.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:516050979709:android:1cfcce02f778ebcb021a14",
+        "android_client_info": {
+          "package_name": "com.snapcalorie.app"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "516050979709-4jpqfp0aqcfdl9ol51ulj6aou6u3m3lv.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.snapcalorie.app",
+            "certificate_hash": "0e152a6f2b518decd3069f9ddd426821812bf27e"
+          }
+        },
+        {
+          "client_id": "516050979709-q8pcpdj3nruu52eojk9u5cjl0pl05mjh.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyC1LnZak4-sRONCGgqrVAVVF3GPBoGJYjI"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "516050979709-q8pcpdj3nruu52eojk9u5cjl0pl05mjh.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
