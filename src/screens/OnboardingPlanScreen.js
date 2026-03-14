@@ -4,8 +4,8 @@ import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../context/AuthContext';
 import api from '../services/api';
 
-const FREE_FEATURES = ['20 AI scans/month', 'Basic nutrition tracking', 'Meal history', 'Water tracking'];
-const PRO_FEATURES = ['Unlimited AI scans', 'Advanced insights', 'Priority support', 'Export data', 'No ads'];
+const FREE_FEATURES = ['8 AI scans/month', 'Basic nutrition tracking', 'Meal history', 'Water tracking'];
+const PRO_FEATURES = ['15 AI scans/month', 'Advanced insights', 'Priority support', 'Export data'];
 
 let RazorpayCheckout = null;
 try {

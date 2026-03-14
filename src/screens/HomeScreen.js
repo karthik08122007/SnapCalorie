@@ -183,7 +183,7 @@ export default function HomeScreen({ navigation }) {
       const u = res.data.data || res.data;
       setScanInfo({
         used: u.scanCount ?? u.scansUsed ?? u.scans_used ?? 0,
-        limit: u.scanLimit ?? u.scan_limit ?? 20,
+        limit: u.scanLimit ?? u.scan_limit ?? 8,
         plan: u.plan ?? u.subscription ?? 'FREE',
         resetAt: u.scanResetAt ?? u.scansResetAt ?? u.scans_reset_at ?? null,
       });
@@ -211,7 +211,7 @@ export default function HomeScreen({ navigation }) {
   };
 
   const scansUsed = scanInfo?.used ?? (user?.scanCount ?? null);
-  const scansLimit = scanInfo?.limit ?? (user?.scanLimit ?? user?.scan_limit ?? 20);
+  const scansLimit = scanInfo?.limit ?? (user?.scanLimit ?? user?.scan_limit ?? 8);
   const scansLeft = scansUsed !== null ? scansLimit - scansUsed : null;
   const scanPlan = (scanInfo?.plan ?? user?.plan ?? 'FREE').toUpperCase();
   const resetAt = scanInfo?.resetAt ?? user?.scansResetAt ?? null;
