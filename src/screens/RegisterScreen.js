@@ -2,8 +2,8 @@ import { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, SafeAreaView, KeyboardAvoidingView, Platform, ScrollView, StatusBar, Alert } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../context/AuthContext';
+import api from '../services/api';
 
-// Google Sign-In requires a native build — gracefully unavailable in Expo Go
 let GoogleSignin = null;
 let statusCodes = {};
 try {
@@ -11,27 +11,54 @@ try {
   GoogleSignin = googleModule.GoogleSignin;
   statusCodes = googleModule.statusCodes;
   GoogleSignin.configure({ webClientId: process.env.EXPO_PUBLIC_GOOGLE_CLIENT_ID });
-} catch {
-  // Native module not available (Expo Go) — Google Sign-In will show "coming soon"
-}
+} catch {}
 
 export default function RegisterScreen({ navigation }) {
+  const [step, setStep] = useState(1); // 1=details, 2=phone, 3=otp
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [phone, setPhone] = useState('');
+  const [otp, setOtp] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
   const [error, setError] = useState('');
   const { register, googleLogin } = useAuth();
 
-  const handle = async () => {
-    setLoading(true);
+  const handleNext = () => {
     setError('');
+    if (!name.trim()) return setError('Name is required.');
+    if (!email.trim()) return setError('Email is required.');
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return setError('Enter a valid email.');
+    if (password.length < 8 || !/[A-Z]/.test(password) || !/[0-9]/.test(password))
+      return setError('Password must be 8+ chars with 1 uppercase and 1 number.');
+    setStep(2);
+  };
+
+  const handleSendOtp = async () => {
+    setError('');
+    if (!phone.trim()) return setError('Phone number is required.');
+    if (!/^\+[1-9]\d{7,14}$/.test(phone)) return setError('Enter phone with country code (e.g. +91XXXXXXXXXX).');
+    setLoading(true);
     try {
-      await register(name, email, password);
+      await api.post('/auth/send-phone-otp', { phone });
+      setStep(3);
     } catch (err) {
-      setError(err.response?.data?.message || 'Registration failed');
+      setError(err.response?.data?.message || 'Failed to send OTP.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleRegister = async () => {
+    setError('');
+    if (!otp.trim() || otp.length !== 6) return setError('Enter the 6-digit OTP.');
+    setLoading(true);
+    try {
+      await register(name, email, password, phone, otp);
+    } catch (err) {
+      setError(err.response?.data?.message || 'Registration failed.');
     } finally {
       setLoading(false);
     }
@@ -57,15 +84,10 @@ export default function RegisterScreen({ navigation }) {
       }
     } catch (err) {
       if (err.code === statusCodes.SIGN_IN_CANCELLED) {
-        // user cancelled, do nothing
-      } else if (err.code === statusCodes.IN_PROGRESS) {
-        setError('Sign in already in progress');
-      } else if (err.code === statusCodes.PLAY_SERVICES_NOT_AVAILABLE) {
-        setError('Google Play Services not available');
       } else if (err.code === statusCodes.DEVELOPER_ERROR || String(err.message).includes('DEVELOPER_ERROR')) {
-        setError('Google Sign-In is not configured for this build. Please use email/password login.');
+        setError('Google Sign-In is not configured for this build.');
       } else {
-        setError(err.response?.data?.message || err.message || `Google sign-up failed (code: ${err.code})`);
+        setError(err.response?.data?.message || err.message || 'Google sign-up failed.');
       }
     } finally {
       setGoogleLoading(false);
@@ -79,34 +101,84 @@ export default function RegisterScreen({ navigation }) {
         <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
           <Text style={styles.logo}>🥗</Text>
           <Text style={styles.title}>Create Account</Text>
-          <Text style={styles.sub}>Start tracking your nutrition today</Text>
+          <Text style={styles.sub}>
+            {step === 1 ? 'Start tracking your nutrition today' : step === 2 ? 'Enter your phone number' : 'Enter the OTP sent to ' + phone}
+          </Text>
+
+          {/* Step indicator */}
+          <View style={styles.steps}>
+            {[1,2,3].map(s => (
+              <View key={s} style={[styles.stepDot, step >= s && styles.stepDotActive]} />
+            ))}
+          </View>
 
           {error ? <Text style={styles.error}>{error}</Text> : null}
 
-          <TextInput style={styles.input} placeholder="Full Name" placeholderTextColor="#999" value={name} onChangeText={setName} />
-          <TextInput style={styles.input} placeholder="Email" placeholderTextColor="#999" value={email} onChangeText={setEmail} keyboardType="email-address" autoCapitalize="none" />
-          <View style={styles.inputWrap}>
-            <TextInput style={styles.inputFlex} placeholder="Password" placeholderTextColor="#999" value={password} onChangeText={setPassword} secureTextEntry={!showPassword} />
-            <TouchableOpacity onPress={() => setShowPassword(v => !v)} style={styles.eyeBtn}>
-              <Ionicons name={showPassword ? 'eye-off-outline' : 'eye-outline'} size={20} color="#999" />
-            </TouchableOpacity>
-          </View>
-          <Text style={styles.hint}>Min 8 characters, 1 uppercase letter, 1 number (e.g. Secret1)</Text>
+          {step === 1 && (
+            <>
+              <TextInput style={styles.input} placeholder="Full Name" placeholderTextColor="#999" value={name} onChangeText={setName} />
+              <TextInput style={styles.input} placeholder="Email" placeholderTextColor="#999" value={email} onChangeText={setEmail} keyboardType="email-address" autoCapitalize="none" />
+              <View style={styles.inputWrap}>
+                <TextInput style={styles.inputFlex} placeholder="Password" placeholderTextColor="#999" value={password} onChangeText={setPassword} secureTextEntry={!showPassword} />
+                <TouchableOpacity onPress={() => setShowPassword(v => !v)} style={styles.eyeBtn}>
+                  <Ionicons name={showPassword ? 'eye-off-outline' : 'eye-outline'} size={20} color="#999" />
+                </TouchableOpacity>
+              </View>
+              <Text style={styles.hint}>Min 8 characters, 1 uppercase letter, 1 number</Text>
+              <TouchableOpacity style={styles.btn} onPress={handleNext}>
+                <Text style={styles.btnText}>Next →</Text>
+              </TouchableOpacity>
+              <View style={styles.dividerRow}>
+                <View style={styles.divider} />
+                <Text style={styles.dividerText}>or continue with</Text>
+                <View style={styles.divider} />
+              </View>
+              <TouchableOpacity style={styles.googleBtn} onPress={handleGoogleSignUp} disabled={googleLoading}>
+                <Text style={styles.googleIcon}>G</Text>
+                <Text style={styles.googleText}>{googleLoading ? 'Signing up...' : 'Sign up with Google'}</Text>
+              </TouchableOpacity>
+            </>
+          )}
 
-          <TouchableOpacity style={styles.btn} onPress={handle} disabled={loading}>
-            <Text style={styles.btnText}>{loading ? 'Creating...' : 'Create Account'}</Text>
-          </TouchableOpacity>
+          {step === 2 && (
+            <>
+              <TextInput
+                style={styles.input}
+                placeholder="+91XXXXXXXXXX"
+                placeholderTextColor="#999"
+                value={phone}
+                onChangeText={setPhone}
+                keyboardType="phone-pad"
+              />
+              <Text style={styles.hint}>Include country code e.g. +91 for India</Text>
+              <TouchableOpacity style={styles.btn} onPress={handleSendOtp} disabled={loading}>
+                <Text style={styles.btnText}>{loading ? 'Sending...' : 'Send OTP'}</Text>
+              </TouchableOpacity>
+              <TouchableOpacity onPress={() => setStep(1)} style={styles.backBtn}>
+                <Text style={styles.backText}>← Back</Text>
+              </TouchableOpacity>
+            </>
+          )}
 
-          <View style={styles.dividerRow}>
-            <View style={styles.divider} />
-            <Text style={styles.dividerText}>or continue with</Text>
-            <View style={styles.divider} />
-          </View>
-
-          <TouchableOpacity style={styles.googleBtn} onPress={handleGoogleSignUp} disabled={googleLoading}>
-            <Text style={styles.googleIcon}>G</Text>
-            <Text style={styles.googleText}>{googleLoading ? 'Signing up...' : 'Sign up with Google'}</Text>
-          </TouchableOpacity>
+          {step === 3 && (
+            <>
+              <TextInput
+                style={[styles.input, styles.otpInput]}
+                placeholder="Enter 6-digit OTP"
+                placeholderTextColor="#999"
+                value={otp}
+                onChangeText={setOtp}
+                keyboardType="number-pad"
+                maxLength={6}
+              />
+              <TouchableOpacity style={styles.btn} onPress={handleRegister} disabled={loading}>
+                <Text style={styles.btnText}>{loading ? 'Creating...' : 'Verify & Create Account'}</Text>
+              </TouchableOpacity>
+              <TouchableOpacity onPress={() => { setStep(2); setOtp(''); }} style={styles.backBtn}>
+                <Text style={styles.backText}>Resend OTP</Text>
+              </TouchableOpacity>
+            </>
+          )}
 
           <TouchableOpacity onPress={() => navigation.navigate('Login')}>
             <Text style={styles.switch}>Already have an account? <Text style={styles.link}>Sign in</Text></Text>
@@ -122,14 +194,20 @@ const styles = StyleSheet.create({
   scroll: { padding: 24, paddingBottom: 48 },
   logo: { fontSize: 48, textAlign: 'center', marginBottom: 8, marginTop: 20 },
   title: { fontSize: 28, fontWeight: '800', textAlign: 'center', color: '#333', marginBottom: 4 },
-  sub: { fontSize: 14, color: '#999', textAlign: 'center', marginBottom: 28 },
+  sub: { fontSize: 14, color: '#999', textAlign: 'center', marginBottom: 16 },
+  steps: { flexDirection: 'row', justifyContent: 'center', gap: 8, marginBottom: 20 },
+  stepDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: '#eee' },
+  stepDotActive: { backgroundColor: '#FF6B35' },
   error: { color: '#ff4444', textAlign: 'center', marginBottom: 12, fontSize: 13, backgroundColor: '#fff0f0', padding: 10, borderRadius: 8 },
   input: { borderWidth: 1, borderColor: '#eee', borderRadius: 12, padding: 14, fontSize: 15, marginBottom: 12, color: '#333', backgroundColor: '#fafafa' },
+  otpInput: { textAlign: 'center', fontSize: 24, fontWeight: '700', letterSpacing: 8 },
   inputWrap: { flexDirection: 'row', alignItems: 'center', borderWidth: 1, borderColor: '#eee', borderRadius: 12, backgroundColor: '#fafafa', marginBottom: 12 },
   inputFlex: { flex: 1, padding: 14, fontSize: 15, color: '#333' },
   eyeBtn: { paddingHorizontal: 14 },
   btn: { backgroundColor: '#FF6B35', borderRadius: 12, padding: 16, alignItems: 'center', marginTop: 4 },
   btnText: { color: 'white', fontWeight: '700', fontSize: 16 },
+  backBtn: { alignItems: 'center', marginTop: 16 },
+  backText: { color: '#FF6B35', fontWeight: '600', fontSize: 14 },
   dividerRow: { flexDirection: 'row', alignItems: 'center', gap: 10, marginVertical: 20 },
   divider: { flex: 1, height: 1, backgroundColor: '#eee' },
   dividerText: { fontSize: 13, color: '#999' },
