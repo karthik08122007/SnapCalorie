@@ -87,6 +87,14 @@ export const AuthProvider = ({ children }) => {
     return user;
   };
 
+  const verifyPhone = async (phone, otp) => {
+    const res = await authAPI.verifyPhoneOtp({ phone, otp });
+    const updatedUser = { ...user, phone, phoneVerified: true };
+    setUser(updatedUser);
+    if (token) await saveSession(token, updatedUser, onboarded);
+    return res;
+  };
+
   const completeOnboarding = async (data) => {
     try {
       const updatedUser = { ...user, ...data };
@@ -132,7 +140,7 @@ export const AuthProvider = ({ children }) => {
   };
 
   return (
-    <AuthContext.Provider value={{ user, token, loading, login, googleLogin, register, logout, onboarded, completeOnboarding, updateProfile }}>
+    <AuthContext.Provider value={{ user, token, loading, login, googleLogin, register, logout, onboarded, completeOnboarding, updateProfile, verifyPhone }}>
       {children}
     </AuthContext.Provider>
   );

@@ -24,6 +24,7 @@ import MealReviewScreen from '../screens/MealReviewScreen';
 import OnboardingAboutScreen from '../screens/OnboardingAboutScreen';
 import OnboardingActivityScreen from '../screens/OnboardingActivityScreen';
 import OnboardingPlanScreen from '../screens/OnboardingPlanScreen';
+import PhoneVerifyScreen from '../screens/PhoneVerifyScreen';
 import { useAuth } from '../context/AuthContext';
 
 const Tab = createBottomTabNavigator();
@@ -129,6 +130,8 @@ export default function AppNavigator() {
             <Stack.Screen name="ForgotPassword" component={ForgotPasswordScreen} />
             <Stack.Screen name="ResetPassword" component={ResetPasswordScreen} />
           </>
+        ) : !user.phoneVerified ? (
+          <Stack.Screen name="PhoneVerify" component={PhoneVerifyScreen} />
         ) : !onboarded ? (
           <>
             <Stack.Screen name="OnboardingAbout" component={OnboardingAboutScreen} />

@@ -14,10 +14,11 @@ try {
 } catch {}
 
 export default function RegisterScreen({ navigation }) {
-  const [step, setStep] = useState(1); // 1=details, 2=phone, 3=otp
+  const [step, setStep] = useState(1); // 1=details, 2=email-otp, 3=phone, 4=phone-otp
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [emailOtp, setEmailOtp] = useState('');
   const [phone, setPhone] = useState('');
   const [otp, setOtp] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -26,14 +27,36 @@ export default function RegisterScreen({ navigation }) {
   const [error, setError] = useState('');
   const { register, googleLogin } = useAuth();
 
-  const handleNext = () => {
+  const handleNext = async () => {
     setError('');
     if (!name.trim()) return setError('Name is required.');
     if (!email.trim()) return setError('Email is required.');
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return setError('Enter a valid email.');
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return setError('Enter a valid email address.');
     if (password.length < 8 || !/[A-Z]/.test(password) || !/[0-9]/.test(password))
       return setError('Password must be 8+ chars with 1 uppercase and 1 number.');
-    setStep(2);
+    setLoading(true);
+    try {
+      await api.post('/auth/send-email-otp', { email, name });
+      setStep(2);
+    } catch (err) {
+      setError(err.response?.data?.message || 'Failed to send email OTP.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleVerifyEmail = async () => {
+    setError('');
+    if (!emailOtp.trim() || emailOtp.length !== 6) return setError('Enter the 6-digit OTP sent to your email.');
+    setLoading(true);
+    try {
+      await api.post('/auth/verify-email-otp', { email, otp: emailOtp });
+      setStep(3);
+    } catch (err) {
+      setError(err.response?.data?.message || 'Invalid OTP.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleSendOtp = async () => {
@@ -43,7 +66,7 @@ export default function RegisterScreen({ navigation }) {
     setLoading(true);
     try {
       await api.post('/auth/send-phone-otp', { phone });
-      setStep(3);
+      setStep(4);
     } catch (err) {
       setError(err.response?.data?.message || 'Failed to send OTP.');
     } finally {
@@ -102,12 +125,15 @@ export default function RegisterScreen({ navigation }) {
           <Text style={styles.logo}>🥗</Text>
           <Text style={styles.title}>Create Account</Text>
           <Text style={styles.sub}>
-            {step === 1 ? 'Start tracking your nutrition today' : step === 2 ? 'Enter your phone number' : 'Enter the OTP sent to ' + phone}
+            {step === 1 ? 'Start tracking your nutrition today'
+              : step === 2 ? 'Enter the OTP sent to ' + email
+              : step === 3 ? 'Enter your phone number'
+              : 'Enter the OTP sent to ' + phone}
           </Text>
 
           {/* Step indicator */}
           <View style={styles.steps}>
-            {[1,2,3].map(s => (
+            {[1,2,3,4].map(s => (
               <View key={s} style={[styles.stepDot, step >= s && styles.stepDotActive]} />
             ))}
           </View>
@@ -143,6 +169,29 @@ export default function RegisterScreen({ navigation }) {
           {step === 2 && (
             <>
               <TextInput
+                style={[styles.input, styles.otpInput]}
+                placeholder="000000"
+                placeholderTextColor="#ccc"
+                value={emailOtp}
+                onChangeText={setEmailOtp}
+                keyboardType="number-pad"
+                maxLength={6}
+              />
+              <TouchableOpacity style={styles.btn} onPress={handleVerifyEmail} disabled={loading}>
+                <Text style={styles.btnText}>{loading ? 'Verifying...' : 'Verify Email'}</Text>
+              </TouchableOpacity>
+              <TouchableOpacity onPress={async () => { setError(''); setLoading(true); try { await api.post('/auth/send-email-otp', { email, name }); } catch(e){} finally { setLoading(false); } }} style={styles.backBtn}>
+                <Text style={styles.backText}>Resend OTP</Text>
+              </TouchableOpacity>
+              <TouchableOpacity onPress={() => { setStep(1); setEmailOtp(''); }} style={styles.backBtn}>
+                <Text style={styles.backText}>← Back</Text>
+              </TouchableOpacity>
+            </>
+          )}
+
+          {step === 3 && (
+            <>
+              <TextInput
                 style={styles.input}
                 placeholder="+91XXXXXXXXXX"
                 placeholderTextColor="#999"
@@ -154,18 +203,18 @@ export default function RegisterScreen({ navigation }) {
               <TouchableOpacity style={styles.btn} onPress={handleSendOtp} disabled={loading}>
                 <Text style={styles.btnText}>{loading ? 'Sending...' : 'Send OTP'}</Text>
               </TouchableOpacity>
-              <TouchableOpacity onPress={() => setStep(1)} style={styles.backBtn}>
+              <TouchableOpacity onPress={() => setStep(2)} style={styles.backBtn}>
                 <Text style={styles.backText}>← Back</Text>
               </TouchableOpacity>
             </>
           )}
 
-          {step === 3 && (
+          {step === 4 && (
             <>
               <TextInput
                 style={[styles.input, styles.otpInput]}
-                placeholder="Enter 6-digit OTP"
-                placeholderTextColor="#999"
+                placeholder="000000"
+                placeholderTextColor="#ccc"
                 value={otp}
                 onChangeText={setOtp}
                 keyboardType="number-pad"
@@ -174,7 +223,7 @@ export default function RegisterScreen({ navigation }) {
               <TouchableOpacity style={styles.btn} onPress={handleRegister} disabled={loading}>
                 <Text style={styles.btnText}>{loading ? 'Creating...' : 'Verify & Create Account'}</Text>
               </TouchableOpacity>
-              <TouchableOpacity onPress={() => { setStep(2); setOtp(''); }} style={styles.backBtn}>
+              <TouchableOpacity onPress={() => { setStep(3); setOtp(''); }} style={styles.backBtn}>
                 <Text style={styles.backText}>Resend OTP</Text>
               </TouchableOpacity>
             </>

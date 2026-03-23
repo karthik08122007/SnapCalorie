@@ -14,7 +14,7 @@
         "buildType": "apk"
       },
       "env": {
-        "EXPO_PUBLIC_API_URL": "https://snapcalorie-backend-production.up.railway.app/api",
+        "EXPO_PUBLIC_API_URL": "https://api.snapcalorie.in/api",
         "EXPO_PUBLIC_GOOGLE_CLIENT_ID": "516050979709-q8pcpdj3nruu52eojk9u5cjl0pl05mjh.apps.googleusercontent.com",
         "EXPO_PUBLIC_RAZORPAY_KEY_ID": "rzp_live_SN6RSFfkG8dZgJ"
       }
@@ -27,7 +27,7 @@
         "autoIncrement": true
       },
       "env": {
-        "EXPO_PUBLIC_API_URL": "https://snapcalorie-backend-production.up.railway.app/api",
+        "EXPO_PUBLIC_API_URL": "https://api.snapcalorie.in/api",
         "EXPO_PUBLIC_GOOGLE_CLIENT_ID": "516050979709-q8pcpdj3nruu52eojk9u5cjl0pl05mjh.apps.googleusercontent.com",
         "EXPO_PUBLIC_RAZORPAY_KEY_ID": "rzp_live_SN6RSFfkG8dZgJ"
       }
