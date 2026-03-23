@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, ScrollView, StatusBar, Switch, Alert, Platform } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, ScrollView, StatusBar, Switch, Alert, Platform, Modal } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as Notifications from 'expo-notifications';
@@ -85,8 +85,39 @@ async function cancelWaterReminders() {
   }
 }
 
+function NotifModal({ visible, icon, title, message, onClose }) {
+  return (
+    <Modal transparent animationType="fade" visible={visible} onRequestClose={onClose}>
+      <View style={mStyles.overlay}>
+        <View style={mStyles.box}>
+          <Text style={mStyles.icon}>{icon}</Text>
+          <Text style={mStyles.title}>{title}</Text>
+          <Text style={mStyles.message}>{message}</Text>
+          <TouchableOpacity style={mStyles.btn} onPress={onClose}>
+            <Text style={mStyles.btnText}>Got it</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+    </Modal>
+  );
+}
+
+const mStyles = StyleSheet.create({
+  overlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.4)', alignItems: 'center', justifyContent: 'center', padding: 32 },
+  box: { backgroundColor: '#fff', borderRadius: 24, padding: 28, alignItems: 'center', width: '100%', shadowColor: '#000', shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.15, shadowRadius: 24, elevation: 10 },
+  icon: { fontSize: 44, marginBottom: 14 },
+  title: { fontSize: 20, fontWeight: '800', color: '#333', marginBottom: 10, textAlign: 'center' },
+  message: { fontSize: 14, color: '#888', textAlign: 'center', lineHeight: 22, marginBottom: 24 },
+  btn: { backgroundColor: '#FF6B35', borderRadius: 14, paddingVertical: 13, paddingHorizontal: 48 },
+  btnText: { color: '#fff', fontWeight: '700', fontSize: 15 },
+});
+
 export default function NotificationsScreen({ navigation }) {
   const insets = useSafeAreaInsets();
+  const [modal, setModal] = useState({ visible: false, icon: '', title: '', message: '' });
+  const showModal = (icon, title, message) => setModal({ visible: true, icon, title, message });
+  const hideModal = () => setModal(prev => ({ ...prev, visible: false }));
+
   const [settings, setSettings] = useState({
     mealReminders: false,
     dailySummary:  false,
@@ -121,7 +152,7 @@ export default function NotificationsScreen({ navigation }) {
     setLoad('goalAlerts', true);
     const success = await setGoalAlertsEnabled(newValue);
     if (!success && newValue) {
-      Alert.alert('Permission Required', 'Please allow notifications in your device settings.');
+      showModal('🔔', 'Permission Required', 'Please allow notifications in your device settings.');
     } else {
       setSettings(prev => ({ ...prev, goalAlerts: newValue }));
     }
@@ -134,10 +165,10 @@ export default function NotificationsScreen({ navigation }) {
     if (newValue) {
       const ok = await scheduleMealReminders();
       if (!ok) {
-        Alert.alert('Permission Required', 'Please allow notifications in your device settings.');
+        showModal('🔔', 'Permission Required', 'Please allow notifications in your device settings.');
       } else {
         setSettings(prev => ({ ...prev, mealReminders: true }));
-        Alert.alert('Meal Reminders On', 'You\'ll be reminded to log breakfast (8 AM), lunch (1 PM) and dinner (7 PM) daily.');
+        showModal('🍽️', 'Meal Reminders On', 'You\'ll be reminded to log breakfast (8 AM), lunch (1 PM) and dinner (7 PM) daily.');
       }
     } else {
       await cancelMealReminders();
@@ -152,10 +183,10 @@ export default function NotificationsScreen({ navigation }) {
     if (newValue) {
       const ok = await scheduleDailySummary();
       if (!ok) {
-        Alert.alert('Permission Required', 'Please allow notifications in your device settings.');
+        showModal('🔔', 'Permission Required', 'Please allow notifications in your device settings.');
       } else {
         setSettings(prev => ({ ...prev, dailySummary: true }));
-        Alert.alert('Daily Summary On', 'You\'ll get a daily nutrition check-in at 9 PM every evening.');
+        showModal('📊', 'Daily Summary On', 'You\'ll get a daily nutrition check-in at 9 PM every evening.');
       }
     } else {
       await cancelDailySummary();
@@ -170,10 +201,10 @@ export default function NotificationsScreen({ navigation }) {
     if (newValue) {
       const ok = await scheduleWeeklyReport();
       if (!ok) {
-        Alert.alert('Permission Required', 'Please allow notifications in your device settings.');
+        showModal('🔔', 'Permission Required', 'Please allow notifications in your device settings.');
       } else {
         setSettings(prev => ({ ...prev, weeklyReport: true }));
-        Alert.alert('Weekly Report On', 'You\'ll receive a weekly nutrition recap every Sunday at 8 PM.');
+        showModal('📅', 'Weekly Report On', 'You\'ll receive a weekly nutrition recap every Sunday at 8 PM.');
       }
     } else {
       await cancelWeeklyReport();
@@ -188,10 +219,10 @@ export default function NotificationsScreen({ navigation }) {
     if (newValue) {
       const ok = await scheduleNutritionTips();
       if (!ok) {
-        Alert.alert('Permission Required', 'Please allow notifications in your device settings.');
+        showModal('🔔', 'Permission Required', 'Please allow notifications in your device settings.');
       } else {
         setSettings(prev => ({ ...prev, tips: true }));
-        Alert.alert('Nutrition Tips On', 'You\'ll receive a daily nutrition tip at 9 AM every morning.');
+        showModal('💡', 'Nutrition Tips On', 'You\'ll receive a daily nutrition tip at 9 AM every morning.');
       }
     } else {
       await cancelNutritionTips();
@@ -206,12 +237,12 @@ export default function NotificationsScreen({ navigation }) {
     if (newValue) {
       const granted = await requestPermissions();
       if (!granted) {
-        Alert.alert('Permission Required', 'Please allow notifications in your device settings to enable water reminders.');
+        showModal('🔔', 'Permission Required', 'Please allow notifications in your device settings to enable water reminders.');
       } else {
         await scheduleWaterReminders(waterInterval);
         const label = INTERVALS.find(i => i.value === waterInterval)?.label || '1 hr';
         setSettings(prev => ({ ...prev, waterReminder: true }));
-        Alert.alert('Water Reminders On', `You'll be reminded to drink water every ${label}.`);
+        showModal('💧', 'Water Reminders On', `You'll be reminded to drink water every ${label}.`);
       }
     } else {
       await cancelWaterReminders();
@@ -274,6 +305,7 @@ export default function NotificationsScreen({ navigation }) {
 
   return (
     <View style={[styles.container, { paddingTop: insets.top }]}>
+      <NotifModal visible={modal.visible} icon={modal.icon} title={modal.title} message={modal.message} onClose={hideModal} />
       <StatusBar barStyle="dark-content" backgroundColor="#fff" />
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
