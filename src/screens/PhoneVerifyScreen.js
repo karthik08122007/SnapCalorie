@@ -9,7 +9,7 @@ export default function PhoneVerifyScreen() {
   const [otp, setOtp] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const { verifyPhone } = useAuth();
+  const { verifyPhone, logout } = useAuth();
 
   const handleSendOtp = async () => {
     setError('');
@@ -72,6 +72,9 @@ export default function PhoneVerifyScreen() {
               <Text style={styles.hint}>Include country code e.g. +91 for India</Text>
               <TouchableOpacity style={styles.btn} onPress={handleSendOtp} disabled={loading}>
                 <Text style={styles.btnText}>{loading ? 'Sending...' : 'Send OTP'}</Text>
+              </TouchableOpacity>
+              <TouchableOpacity onPress={logout} style={styles.backBtn}>
+                <Text style={styles.backText}>← Sign out</Text>
               </TouchableOpacity>
             </>
           )}

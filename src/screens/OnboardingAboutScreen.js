@@ -1,7 +1,9 @@
 import { useState } from 'react';
 import { View, Text, StyleSheet, SafeAreaView, TouchableOpacity, TextInput, ScrollView } from 'react-native';
+import { useAuth } from '../context/AuthContext';
 
 export default function OnboardingAboutScreen({ navigation }) {
+  const { logout } = useAuth();
   const [gender, setGender] = useState('');
   const [age, setAge] = useState('');
   const [height, setHeight] = useState('');
@@ -99,6 +101,10 @@ export default function OnboardingAboutScreen({ navigation }) {
           <Text style={styles.btnText}>Continue →</Text>
         </TouchableOpacity>
 
+        <TouchableOpacity onPress={logout} style={styles.signOutBtn}>
+          <Text style={styles.signOutText}>← Sign out</Text>
+        </TouchableOpacity>
+
       </ScrollView>
     </SafeAreaView>
   );
@@ -133,4 +139,6 @@ const styles = StyleSheet.create({
   btnDisabled: { opacity: 0.5 },
   btnText: { color: 'white', fontWeight: '700', fontSize: 16 },
   skip: { textAlign: 'center', color: '#999', fontSize: 13, marginTop: 16, marginBottom: 24 },
+  signOutBtn: { alignItems: 'center', marginTop: 16, marginBottom: 24 },
+  signOutText: { color: '#999', fontWeight: '600', fontSize: 14 },
 });
