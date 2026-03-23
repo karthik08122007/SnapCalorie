@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, TextInput, ActivityIndicator, Alert, StatusBar, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, TextInput, ActivityIndicator, StatusBar, ScrollView } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as ImagePicker from 'expo-image-picker';
 import { Ionicons } from '@expo/vector-icons';
@@ -7,6 +7,7 @@ import { mealsAPI } from '../services/api';
 import { getFoodHistory } from '../services/foodHistory';
 import { compressMealImage } from '../utils/imageCompressor';
 import { trackEvent } from '../utils/analytics';
+import AppModal from '../components/AppModal';
 
 export default function LogMealScreen({ navigation }) {
   const insets = useSafeAreaInsets();
@@ -14,6 +15,10 @@ export default function LogMealScreen({ navigation }) {
   const [query, setQuery] = useState('');
   const [mode, setMode] = useState('photo');
   const [recentFoods, setRecentFoods] = useState([]);
+  const [modal, setModal] = useState({ visible: false, icon: '', title: '', message: '', confirmText: '', confirmDestructive: false, onConfirm: null });
+
+  const showModal = (icon, title, message) => setModal({ visible: true, icon, title, message, onConfirm: null });
+  const hideModal = () => setModal(prev => ({ ...prev, visible: false }));
 
   const loadRecent = useCallback(async () => {
     const history = await getFoodHistory();
@@ -30,7 +35,7 @@ export default function LogMealScreen({ navigation }) {
 
   const takePhoto = async () => {
     const { status } = await ImagePicker.requestCameraPermissionsAsync();
-    if (status !== 'granted') { Alert.alert('Permission needed', 'Camera access is required'); return; }
+    if (status !== 'granted') { showModal('🔔', 'Permission needed', 'Camera access is required'); return; }
     const result = await ImagePicker.launchCameraAsync({ mediaTypes: ImagePicker.MediaTypeOptions.Images, quality: 0.8 });
     if (!result.canceled) await analyzeImage(result.assets[0]);
   };
@@ -55,7 +60,7 @@ export default function LogMealScreen({ navigation }) {
       trackEvent('meal_scan_completed', { scan_time_ms: Date.now() - scanStart, source: 'photo' });
       navigation.navigate('MealReview', { meal, imageUri: asset.uri });
     } catch (err) {
-      Alert.alert('Error', err.response?.data?.message || 'Analysis failed');
+      showModal('❌', 'Error', err.response?.data?.message || 'Analysis failed');
     } finally {
       setAnalyzing(false);
     }
@@ -72,7 +77,7 @@ export default function LogMealScreen({ navigation }) {
       trackEvent('meal_scan_completed', { scan_time_ms: Date.now() - scanStart, source: 'text' });
       navigation.navigate('MealReview', { meal, imageUri: null });
     } catch (err) {
-      Alert.alert('Error', err.response?.data?.message || 'Analysis failed');
+      showModal('❌', 'Error', err.response?.data?.message || 'Analysis failed');
     } finally {
       setAnalyzing(false);
     }
@@ -94,6 +99,7 @@ export default function LogMealScreen({ navigation }) {
 
   return (
     <View style={[styles.container, { paddingTop: insets.top }]}>
+      <AppModal visible={modal.visible} icon={modal.icon} title={modal.title} message={modal.message} onClose={hideModal} confirmText={modal.confirmText} onConfirm={modal.onConfirm} confirmDestructive={modal.confirmDestructive} />
       <StatusBar barStyle="dark-content" backgroundColor="#fff" />
       <View style={styles.header}>
         <Text style={styles.title}>Log Meal</Text>

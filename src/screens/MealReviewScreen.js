@@ -1,7 +1,7 @@
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, useRef } from 'react';
 import {
   View, Text, ScrollView, StyleSheet, Image, TouchableOpacity,
-  TextInput, Alert, StatusBar, Modal, ActivityIndicator,
+  TextInput, StatusBar, Modal, ActivityIndicator,
   KeyboardAvoidingView, Platform,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -10,6 +10,7 @@ import { mealsAPI } from '../services/api';
 import { saveFoodToHistory, findSimilarFood } from '../services/foodHistory';
 import { PORTION_SIZES } from '../utils/portionHelper';
 import { trackEvent } from '../utils/analytics';
+import AppModal from '../components/AppModal';
 
 const BASE_URL = (process.env.EXPO_PUBLIC_API_URL || 'https://snapcalorie-backend-production.up.railway.app/api').replace('/api', '');
 
@@ -142,6 +143,11 @@ export default function MealReviewScreen({ route, navigation }) {
   const [imgError, setImgError] = useState(false);
   const [showFullNutrition, setShowFullNutrition] = useState(false);
   const [swappingItemId, setSwappingItemId] = useState(null);
+  const [modal, setModal] = useState({ visible: false, icon: '', title: '', message: '', confirmText: '', confirmDestructive: false, onConfirm: null });
+
+  const showModal = (icon, title, message) => setModal({ visible: true, icon, title, message, onConfirm: null });
+  const showConfirmModal = (icon, title, message, confirmText, onConfirm, confirmDestructive = false) => setModal({ visible: true, icon, title, message, confirmText, onConfirm, confirmDestructive });
+  const hideModal = () => setModal(prev => ({ ...prev, visible: false }));
   // Global portion size: applies a multiplier to all item totals
   const [globalPortion, setGlobalPortion] = useState('medium');
 
@@ -194,13 +200,13 @@ export default function MealReviewScreen({ route, navigation }) {
 
   const removeItem = (id) => {
     if (items.length === 1) {
-      Alert.alert('Cannot remove', 'At least one food item is required.');
+      showModal('⚠️', 'Cannot remove', 'At least one food item is required.');
       return;
     }
-    Alert.alert('Remove item', 'Remove this item from the meal?', [
-      { text: 'Cancel', style: 'cancel' },
-      { text: 'Remove', style: 'destructive', onPress: () => setItems(prev => prev.filter(i => i.id !== id)) },
-    ]);
+    showConfirmModal('🗑️', 'Remove item', 'Remove this item from the meal?', 'Remove', () => {
+      hideModal();
+      setItems(prev => prev.filter(i => i.id !== id));
+    }, true);
   };
 
   const updatePortion = (id, portion) => {
@@ -248,7 +254,7 @@ export default function MealReviewScreen({ route, navigation }) {
       setShowRefine(false);
       setRefineQuery('');
     } catch {
-      Alert.alert('Error', 'Could not re-analyze. Try editing values manually.');
+      showModal('❌', 'Error', 'Could not re-analyze. Try editing values manually.');
     } finally {
       setRefining(false);
     }
@@ -303,6 +309,7 @@ export default function MealReviewScreen({ route, navigation }) {
 
   return (
     <View style={[styles.container, { paddingTop: insets.top }]}>
+      <AppModal visible={modal.visible} icon={modal.icon} title={modal.title} message={modal.message} onClose={hideModal} confirmText={modal.confirmText} onConfirm={modal.onConfirm} confirmDestructive={modal.confirmDestructive} />
       <StatusBar barStyle="dark-content" backgroundColor="#fff" />
 
       {/* Header */}

@@ -1,12 +1,13 @@
 import { useState } from 'react';
 import {
   View, Text, TouchableOpacity, StyleSheet, ScrollView, StatusBar,
-  Alert, Modal, TextInput, ActivityIndicator,
+  Modal, TextInput, ActivityIndicator,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth } from '../context/AuthContext';
 import { authAPI } from '../services/api';
+import AppModal from '../components/AppModal';
 
 const DELETE_REASONS = [
   "I'm not using it anymore",
@@ -26,6 +27,10 @@ export default function PrivacyScreen({ navigation }) {
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [modal, setModal] = useState({ visible: false, icon: '', title: '', message: '', confirmText: '', confirmDestructive: false, onConfirm: null });
+
+  const showModal = (icon, title, message) => setModal({ visible: true, icon, title, message, onConfirm: null });
+  const hideModal = () => setModal(prev => ({ ...prev, visible: false }));
 
   const openDeleteFlow = () => {
     setReason('');
@@ -41,7 +46,7 @@ export default function PrivacyScreen({ navigation }) {
 
   const handleConfirmDelete = async () => {
     if (!password.trim()) {
-      Alert.alert('Required', 'Please enter your password to confirm.');
+      showModal('⚠️', 'Required', 'Please enter your password to confirm.');
       return;
     }
     setLoading(true);
@@ -51,7 +56,7 @@ export default function PrivacyScreen({ navigation }) {
       await logout();
     } catch (err) {
       const msg = err?.response?.data?.message || 'Incorrect password. Please try again.';
-      Alert.alert('Deletion Failed', msg);
+      showModal('❌', 'Deletion Failed', msg);
     } finally {
       setLoading(false);
     }
@@ -69,7 +74,7 @@ export default function PrivacyScreen({ navigation }) {
     {
       title: 'Your Rights',
       items: [
-        { icon: 'download-outline', label: 'Export Your Data', desc: 'Download a copy of all your data', color: '#FFD93D', onPress: () => Alert.alert('Export Data', 'Your data export will be emailed to you within 24 hours.') },
+        { icon: 'download-outline', label: 'Export Your Data', desc: 'Download a copy of all your data', color: '#FFD93D', onPress: () => showModal('📄', 'Export Data', 'Your data export will be emailed to you within 24 hours.') },
         { icon: 'trash-outline', label: 'Delete Account', desc: 'Permanently delete your account and all data', color: '#ff4444', onPress: openDeleteFlow },
       ],
     },
@@ -77,6 +82,7 @@ export default function PrivacyScreen({ navigation }) {
 
   return (
     <View style={[styles.container, { paddingTop: insets.top }]}>
+      <AppModal visible={modal.visible} icon={modal.icon} title={modal.title} message={modal.message} onClose={hideModal} confirmText={modal.confirmText} onConfirm={modal.onConfirm} confirmDestructive={modal.confirmDestructive} />
       <StatusBar barStyle="dark-content" backgroundColor="#fff" />
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>

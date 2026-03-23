@@ -1,8 +1,9 @@
 import { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView, StatusBar, Alert } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView, StatusBar } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth } from '../context/AuthContext';
+import AppModal from '../components/AppModal';
 
 const ACTIVITIES = [
   { id: 'sedentary', label: 'Sedentary (little/no exercise)' },
@@ -28,9 +29,13 @@ export default function MyGoalsScreen({ navigation }) {
   const [activity, setActivity] = useState(user?.activityLevel || '');
   const [goal, setGoal] = useState(user?.goal || '');
   const [saving, setSaving] = useState(false);
+  const [modal, setModal] = useState({ visible: false, icon: '', title: '', message: '', confirmText: '', confirmDestructive: false, onConfirm: null });
+
+  const showModal = (icon, title, message) => setModal({ visible: true, icon, title, message, onConfirm: null });
+  const hideModal = () => setModal(prev => ({ ...prev, visible: false }));
 
   const handleSave = async () => {
-    if (!calories || isNaN(calories)) return Alert.alert('Error', 'Enter a valid calorie goal');
+    if (!calories || isNaN(calories)) { showModal('⚠️', 'Error', 'Enter a valid calorie goal'); return; }
     setSaving(true);
     try {
       await updateProfile({
@@ -41,10 +46,10 @@ export default function MyGoalsScreen({ navigation }) {
         activityLevel: activity || undefined,
         goal: goal || undefined,
       });
-      Alert.alert('Saved', 'Goals updated successfully');
+      showModal('✅', 'Saved', 'Goals updated successfully');
       navigation.goBack();
     } catch {
-      Alert.alert('Error', 'Failed to save goals');
+      showModal('❌', 'Error', 'Failed to save goals');
     } finally {
       setSaving(false);
     }
@@ -69,6 +74,7 @@ export default function MyGoalsScreen({ navigation }) {
 
   return (
     <View style={[styles.container, { paddingTop: insets.top }]}>
+      <AppModal visible={modal.visible} icon={modal.icon} title={modal.title} message={modal.message} onClose={hideModal} confirmText={modal.confirmText} onConfirm={modal.onConfirm} confirmDestructive={modal.confirmDestructive} />
       <StatusBar barStyle="dark-content" backgroundColor="#fff" />
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>

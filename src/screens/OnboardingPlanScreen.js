@@ -1,8 +1,9 @@
 import { useState } from 'react';
-import { View, Text, StyleSheet, SafeAreaView, TouchableOpacity, ScrollView, Alert, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, SafeAreaView, TouchableOpacity, ScrollView, ActivityIndicator } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../context/AuthContext';
 import api from '../services/api';
+import AppModal from '../components/AppModal';
 
 const FREE_FEATURES = ['8 AI scans/month', 'Basic nutrition tracking', 'Meal history', 'Water tracking'];
 const PRO_FEATURES = ['15 AI scans/month', 'Advanced insights', 'Priority support', 'Export data'];
@@ -18,13 +19,17 @@ export default function OnboardingPlanScreen({ navigation, route }) {
   const [loading, setLoading] = useState(false);
   const { completeOnboarding, updateProfile, user } = useAuth();
   const data = route.params;
+  const [modal, setModal] = useState({ visible: false, icon: '', title: '', message: '', confirmText: '', confirmDestructive: false, onConfirm: null });
+
+  const showModal = (icon, title, message) => setModal({ visible: true, icon, title, message, onConfirm: null });
+  const hideModal = () => setModal(prev => ({ ...prev, visible: false }));
 
   const handleFree = async () => {
     setLoading(true);
     try {
       await completeOnboarding({ ...data, plan: 'free' });
     } catch {
-      Alert.alert('Error', 'Something went wrong');
+      showModal('❌', 'Error', 'Something went wrong');
     } finally {
       setLoading(false);
     }
@@ -32,7 +37,7 @@ export default function OnboardingPlanScreen({ navigation, route }) {
 
   const handlePro = async () => {
     if (!RazorpayCheckout) {
-      Alert.alert('Not Supported', 'Payments are not available in Expo Go. Please use the installed app.');
+      showModal('ℹ️', 'Not Supported', 'Payments are not available in Expo Go. Please use the installed app.');
       return;
     }
 
@@ -71,7 +76,7 @@ export default function OnboardingPlanScreen({ navigation, route }) {
       await updateProfile({ plan: 'pro' });
       await completeOnboarding({ ...data, plan: 'pro' });
 
-      Alert.alert('🎉 Welcome to Pro!', 'You now have unlimited AI scans and all Pro features.');
+      showModal('🎉', 'Welcome to Pro!', 'You now have unlimited AI scans and all Pro features.');
     } catch (error) {
       if (error?.code === 2) {
         // User dismissed sheet — do nothing
@@ -88,7 +93,7 @@ export default function OnboardingPlanScreen({ navigation, route }) {
         } catch {
           msg = error?.description || msg;
         }
-        Alert.alert('Payment Failed', msg);
+        showModal('❌', 'Payment Failed', msg);
       }
     } finally {
       setLoading(false);
@@ -97,6 +102,7 @@ export default function OnboardingPlanScreen({ navigation, route }) {
 
   return (
     <SafeAreaView style={styles.container}>
+      <AppModal visible={modal.visible} icon={modal.icon} title={modal.title} message={modal.message} onClose={hideModal} confirmText={modal.confirmText} onConfirm={modal.onConfirm} confirmDestructive={modal.confirmDestructive} />
       <ScrollView contentContainerStyle={styles.scroll}>
         <Text style={styles.logo}>🥗</Text>
         <Text style={styles.title}>Choose Your Plan</Text>

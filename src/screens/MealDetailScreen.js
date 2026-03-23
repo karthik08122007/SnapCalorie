@@ -1,5 +1,5 @@
 import { useState, useRef } from 'react';
-import { View, Text, ScrollView, StyleSheet, Image, TouchableOpacity, Alert, StatusBar, ActivityIndicator } from 'react-native';
+import { View, Text, ScrollView, StyleSheet, Image, TouchableOpacity, StatusBar, ActivityIndicator } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { mealsAPI } from '../services/api';
@@ -8,6 +8,7 @@ import * as Sharing from 'expo-sharing';
 import MealShareCard from '../components/MealShareCard';
 import { calculateMealHealthScore } from '../utils/mealHealthScore';
 import { trackEvent } from '../utils/analytics';
+import AppModal from '../components/AppModal';
 
 const BASE_URL = (process.env.EXPO_PUBLIC_API_URL || 'https://snapcalorie-backend-production.up.railway.app/api').replace('/api', '');
 
@@ -19,6 +20,11 @@ export default function MealDetailScreen({ route, navigation }) {
   const [sharing, setSharing] = useState(false);
   const [showShareCard, setShowShareCard] = useState(false);
   const shareCardRef = useRef(null);
+  const [modal, setModal] = useState({ visible: false, icon: '', title: '', message: '', confirmText: '', confirmDestructive: false, onConfirm: null });
+
+  const showModal = (icon, title, message) => setModal({ visible: true, icon, title, message, onConfirm: null });
+  const showConfirmModal = (icon, title, message, confirmText, onConfirm, confirmDestructive = false) => setModal({ visible: true, icon, title, message, confirmText, onConfirm, confirmDestructive });
+  const hideModal = () => setModal(prev => ({ ...prev, visible: false }));
 
   // Calculate health score for this meal
   const { score: healthScore, message: healthMessage } = calculateMealHealthScore({
@@ -38,12 +44,12 @@ export default function MealDetailScreen({ route, navigation }) {
         setShowShareCard(false);
         if (!uri) throw new Error('Capture failed');
         const canShare = await Sharing.isAvailableAsync();
-        if (!canShare) { Alert.alert('Sharing not available on this device'); return; }
+        if (!canShare) { showModal('ℹ️', 'Not Available', 'Sharing not available on this device'); return; }
         await Sharing.shareAsync(uri, { mimeType: 'image/png', dialogTitle: 'Share your meal' });
         trackEvent('share_meal', { health_score: healthScore, calories: meal.calories });
       } catch {
         setShowShareCard(false);
-        Alert.alert('Share failed', 'Could not generate share card.');
+        showModal('❌', 'Share failed', 'Could not generate share card.');
       } finally {
         setSharing(false);
       }
@@ -55,26 +61,22 @@ export default function MealDetailScreen({ route, navigation }) {
 
   const handleDelete = () => {
     const mealId = meal._id || meal.id;
-    Alert.alert('Delete Meal', 'Remove this meal from your diary?', [
-      { text: 'Cancel', style: 'cancel' },
-      {
-        text: 'Delete', style: 'destructive', onPress: async () => {
-          if (!mealId) {
-            Alert.alert('Error', 'Meal ID not found — cannot delete');
-            return;
-          }
-          setDeleting(true);
-          try {
-            await mealsAPI.delete(mealId);
-            navigation.goBack();
-          } catch (err) {
-            const msg = err.response?.data?.message || err.message || 'Failed to delete meal';
-            Alert.alert('Delete failed', msg);
-            setDeleting(false);
-          }
-        }
+    showConfirmModal('🗑️', 'Delete Meal', 'Remove this meal from your diary?', 'Delete', async () => {
+      hideModal();
+      if (!mealId) {
+        showModal('❌', 'Error', 'Meal ID not found — cannot delete');
+        return;
       }
-    ]);
+      setDeleting(true);
+      try {
+        await mealsAPI.delete(mealId);
+        navigation.goBack();
+      } catch (err) {
+        const msg = err.response?.data?.message || err.message || 'Failed to delete meal';
+        showModal('❌', 'Delete failed', msg);
+        setDeleting(false);
+      }
+    }, true);
   };
 
   const macroTotal = (meal.protein_g || 0) + (meal.carbs_g || 0) + (meal.fat_g || 0);
@@ -95,6 +97,7 @@ export default function MealDetailScreen({ route, navigation }) {
 
   return (
     <View style={[styles.container, { paddingTop: insets.top }]}>
+      <AppModal visible={modal.visible} icon={modal.icon} title={modal.title} message={modal.message} onClose={hideModal} confirmText={modal.confirmText} onConfirm={modal.onConfirm} confirmDestructive={modal.confirmDestructive} />
       <StatusBar barStyle="dark-content" backgroundColor="#fff" />
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>

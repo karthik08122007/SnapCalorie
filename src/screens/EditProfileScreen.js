@@ -1,8 +1,9 @@
 import { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView, StatusBar, Alert } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView, StatusBar } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth } from '../context/AuthContext';
+import AppModal from '../components/AppModal';
 
 
 export default function EditProfileScreen({ navigation }) {
@@ -14,9 +15,13 @@ export default function EditProfileScreen({ navigation }) {
   const [height, setHeight] = useState(String(user?.heightCm || ''));
   const [gender, setGender] = useState(user?.gender || '');
   const [saving, setSaving] = useState(false);
+  const [modal, setModal] = useState({ visible: false, icon: '', title: '', message: '', confirmText: '', confirmDestructive: false, onConfirm: null });
+
+  const showModal = (icon, title, message) => setModal({ visible: true, icon, title, message, onConfirm: null });
+  const hideModal = () => setModal(prev => ({ ...prev, visible: false }));
 
   const handleSave = async () => {
-    if (!name.trim()) return Alert.alert('Error', 'Name cannot be empty');
+    if (!name.trim()) { showModal('⚠️', 'Error', 'Name cannot be empty'); return; }
     setSaving(true);
     try {
       await updateProfile({
@@ -26,10 +31,10 @@ export default function EditProfileScreen({ navigation }) {
         heightCm: height ? Number(height) : undefined,
         gender: gender || undefined,
       });
-      Alert.alert('Saved', 'Profile updated successfully');
+      showModal('✅', 'Saved', 'Profile updated successfully');
       navigation.goBack();
     } catch {
-      Alert.alert('Error', 'Failed to update profile');
+      showModal('❌', 'Error', 'Failed to update profile');
     } finally {
       setSaving(false);
     }
@@ -37,6 +42,7 @@ export default function EditProfileScreen({ navigation }) {
 
   return (
     <View style={[styles.container, { paddingTop: insets.top }]}>
+      <AppModal visible={modal.visible} icon={modal.icon} title={modal.title} message={modal.message} onClose={hideModal} confirmText={modal.confirmText} onConfirm={modal.onConfirm} confirmDestructive={modal.confirmDestructive} />
       <StatusBar barStyle="dark-content" backgroundColor="#fff" />
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>

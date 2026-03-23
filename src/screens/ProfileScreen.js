@@ -1,5 +1,5 @@
 import { useState, useCallback } from 'react';
-import { View, Text, ScrollView, StyleSheet, TouchableOpacity, StatusBar, RefreshControl, Alert, ActivityIndicator } from 'react-native';
+import { View, Text, ScrollView, StyleSheet, TouchableOpacity, StatusBar, RefreshControl, ActivityIndicator } from 'react-native';
 import * as FileSystem from 'expo-file-system';
 import * as Sharing from 'expo-sharing';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -8,6 +8,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../context/AuthContext';
 import { mealsAPI } from '../services/api';
 import api from '../services/api';
+import AppModal from '../components/AppModal';
 
 let RazorpayCheckout = null;
 try {
@@ -39,10 +40,14 @@ export default function ProfileScreen({ navigation }) {
   const [refreshing, setRefreshing] = useState(false);
   const [payLoading, setPayLoading] = useState(false);
   const [exporting, setExporting] = useState(false);
+  const [modal, setModal] = useState({ visible: false, icon: '', title: '', message: '', confirmText: '', confirmDestructive: false, onConfirm: null });
+
+  const showModal = (icon, title, message) => setModal({ visible: true, icon, title, message, onConfirm: null });
+  const hideModal = () => setModal(prev => ({ ...prev, visible: false }));
 
   const handleTurnPro = async () => {
     if (!RazorpayCheckout) {
-      Alert.alert('Not Supported', 'Payments are not available in Expo Go. Please use the installed app.');
+      showModal('ℹ️', 'Not Supported', 'Payments are not available in Expo Go. Please use the installed app.');
       return;
     }
     setPayLoading(true);
@@ -66,7 +71,7 @@ export default function ProfileScreen({ navigation }) {
         razorpay_signature: paymentData.razorpay_signature,
       });
       await updateProfile({ plan: 'pro' });
-      Alert.alert('🎉 Welcome to Pro!', 'You now have unlimited AI scans and all Pro features.');
+      showModal('🎉', 'Welcome to Pro!', 'You now have unlimited AI scans and all Pro features.');
     } catch (error) {
       if (error?.code === 2) return; // user cancelled
       let msg = 'Something went wrong. Please try again.';
@@ -77,7 +82,7 @@ export default function ProfileScreen({ navigation }) {
           ? 'Payment was cancelled.'
           : parsed?.error?.description || error?.message || msg;
       } catch { msg = error?.message || msg; }
-      Alert.alert('Payment Failed', String(msg));
+      showModal('❌', 'Payment Failed', String(msg));
     } finally {
       setPayLoading(false);
     }
@@ -113,6 +118,7 @@ export default function ProfileScreen({ navigation }) {
 
   return (
     <View style={[styles.container, { paddingTop: insets.top }]}>
+      <AppModal visible={modal.visible} icon={modal.icon} title={modal.title} message={modal.message} onClose={hideModal} confirmText={modal.confirmText} onConfirm={modal.onConfirm} confirmDestructive={modal.confirmDestructive} />
       <StatusBar barStyle="dark-content" backgroundColor="#f8f8f8" />
       <ScrollView
         showsVerticalScrollIndicator={false}
@@ -192,7 +198,7 @@ export default function ProfileScreen({ navigation }) {
             }
             await Sharing.shareAsync(result.uri, { mimeType: 'application/pdf', dialogTitle: 'SnapCalorie Data Export', UTI: 'com.adobe.pdf' });
           } catch {
-            Alert.alert('Export failed', 'Could not export your data. Please try again.');
+            showModal('❌', 'Export failed', 'Could not export your data. Please try again.');
           } finally {
             setExporting(false);
           }

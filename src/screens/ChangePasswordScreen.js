@@ -1,7 +1,8 @@
-import { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, SafeAreaView, KeyboardAvoidingView, Platform, ScrollView, StatusBar, Alert } from 'react-native';
+import { useState, useRef } from 'react';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, SafeAreaView, KeyboardAvoidingView, Platform, ScrollView, StatusBar } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import api from '../services/api';
+import AppModal from '../components/AppModal';
 
 export default function ChangePasswordScreen({ navigation }) {
   const [currentPassword, setCurrentPassword] = useState('');
@@ -12,6 +13,12 @@ export default function ChangePasswordScreen({ navigation }) {
   const [showConfirm, setShowConfirm] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [modal, setModal] = useState({ visible: false, icon: '', title: '', message: '', confirmText: '', confirmDestructive: false, onConfirm: null });
+  const pendingNav = useRef(null);
+
+  const showModal = (icon, title, message) => setModal({ visible: true, icon, title, message, onConfirm: null });
+  const showConfirmModal = (icon, title, message, confirmText, onConfirm, confirmDestructive = false) => setModal({ visible: true, icon, title, message, confirmText, onConfirm, confirmDestructive });
+  const hideModal = () => { setModal(prev => ({ ...prev, visible: false })); if (pendingNav.current) { pendingNav.current(); pendingNav.current = null; } };
 
   const handle = async () => {
     if (!currentPassword) return setError('Enter your current password.');
@@ -23,9 +30,8 @@ export default function ChangePasswordScreen({ navigation }) {
     setError('');
     try {
       await api.put('/auth/change-password', { currentPassword, newPassword });
-      Alert.alert('Password Changed', 'Your password has been updated successfully.', [
-        { text: 'OK', onPress: () => navigation.goBack() },
-      ]);
+      pendingNav.current = () => navigation.goBack();
+      showModal('✅', 'Password Changed', 'Your password has been updated successfully.');
     } catch (err) {
       setError(err.response?.data?.message || 'Failed to change password.');
     } finally {
@@ -35,6 +41,7 @@ export default function ChangePasswordScreen({ navigation }) {
 
   return (
     <SafeAreaView style={styles.container}>
+      <AppModal visible={modal.visible} icon={modal.icon} title={modal.title} message={modal.message} onClose={hideModal} confirmText={modal.confirmText} onConfirm={modal.onConfirm} confirmDestructive={modal.confirmDestructive} />
       <StatusBar barStyle="dark-content" backgroundColor="#fff" />
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{ flex: 1 }}>
         <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
