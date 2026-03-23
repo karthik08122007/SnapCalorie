@@ -67,7 +67,6 @@ export default function PhoneVerifyScreen() {
                 value={phone}
                 onChangeText={setPhone}
                 keyboardType="phone-pad"
-                autoFocus
               />
               <Text style={styles.hint}>Include country code e.g. +91 for India</Text>
               <TouchableOpacity style={styles.btn} onPress={handleSendOtp} disabled={loading}>
@@ -89,7 +88,6 @@ export default function PhoneVerifyScreen() {
                 onChangeText={setOtp}
                 keyboardType="number-pad"
                 maxLength={6}
-                autoFocus
               />
               <TouchableOpacity style={styles.btn} onPress={handleVerify} disabled={loading}>
                 <Text style={styles.btnText}>{loading ? 'Verifying...' : 'Verify & Continue'}</Text>
