@@ -52,7 +52,6 @@ async function scheduleWaterReminders(intervalMinutes = 60) {
         title: '💧 Time to hydrate!',
         body: 'Drink a glass of water to stay on track.',
         sound: 'water_reminder.mp3',
-        categoryIdentifier: 'water_reminder',
         data: { waterReminder: true },
         ...(Platform.OS === 'android' && { channelId: WATER_CHANNEL_ID }),
       },
