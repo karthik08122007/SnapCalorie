@@ -1,5 +1,6 @@
-import { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, SafeAreaView, KeyboardAvoidingView, Platform, ScrollView, StatusBar } from 'react-native';
+import { useState, useCallback } from 'react';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, SafeAreaView, KeyboardAvoidingView, Platform, ScrollView, StatusBar, BackHandler } from 'react-native';
+import { useFocusEffect } from '@react-navigation/native';
 import { useAuth } from '../context/AuthContext';
 import api from '../services/api';
 
@@ -10,6 +11,15 @@ export default function PhoneVerifyScreen() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const { verifyPhone, logout } = useAuth();
+
+  // Intercept Android hardware back button — sign out instead of exiting app
+  useFocusEffect(
+    useCallback(() => {
+      const onBackPress = () => { logout(); return true; };
+      BackHandler.addEventListener('hardwareBackPress', onBackPress);
+      return () => BackHandler.removeEventListener('hardwareBackPress', onBackPress);
+    }, [logout])
+  );
 
   const handleSendOtp = async () => {
     setError('');

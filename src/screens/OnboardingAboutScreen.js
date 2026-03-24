@@ -1,9 +1,20 @@
-import { useState } from 'react';
-import { View, Text, StyleSheet, SafeAreaView, TouchableOpacity, TextInput, ScrollView } from 'react-native';
+import { useState, useCallback } from 'react';
+import { View, Text, StyleSheet, SafeAreaView, TouchableOpacity, TextInput, ScrollView, BackHandler } from 'react-native';
+import { useFocusEffect } from '@react-navigation/native';
 import { useAuth } from '../context/AuthContext';
 
 export default function OnboardingAboutScreen({ navigation }) {
   const { logout } = useAuth();
+
+  // Intercept Android hardware back button — sign out instead of exiting app
+  useFocusEffect(
+    useCallback(() => {
+      const onBackPress = () => { logout(); return true; };
+      BackHandler.addEventListener('hardwareBackPress', onBackPress);
+      return () => BackHandler.removeEventListener('hardwareBackPress', onBackPress);
+    }, [logout])
+  );
+
   const [gender, setGender] = useState('');
   const [age, setAge] = useState('');
   const [height, setHeight] = useState('');

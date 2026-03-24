@@ -151,6 +151,10 @@ export default function OnboardingPlanScreen({ navigation, route }) {
         <TouchableOpacity onPress={handleFree} disabled={loading}>
           <Text style={styles.skip}>Skip for now</Text>
         </TouchableOpacity>
+
+        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
+          <Text style={styles.backBtnText}>← Back</Text>
+        </TouchableOpacity>
       </ScrollView>
     </SafeAreaView>
   );
@@ -178,5 +182,7 @@ const styles = StyleSheet.create({
   freeBtnText: { color: '#333', fontWeight: '700', fontSize: 15 },
   proBtn: { backgroundColor: '#FF6B35', borderRadius: 12, padding: 14, alignItems: 'center', marginTop: 8 },
   proBtnText: { color: 'white', fontWeight: '700', fontSize: 15 },
-  skip: { textAlign: 'center', color: '#999', fontSize: 13, marginTop: 8, marginBottom: 24 },
+  skip: { textAlign: 'center', color: '#999', fontSize: 13, marginTop: 8, marginBottom: 8 },
+  backBtn: { alignItems: 'center', marginBottom: 24 },
+  backBtnText: { color: '#999', fontWeight: '600', fontSize: 14 },
 });
