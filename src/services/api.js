@@ -19,7 +19,6 @@ export const authAPI = {
   deleteAccount: (password) => api.delete('/auth/account', { data: { password } }),
   forgotPassword: (email) => api.post('/auth/forgot-password', { email }),
   resetPassword: (email, otp, newPassword) => api.post('/auth/reset-password', { email, otp, newPassword }),
-  verifyPhoneOtp: (data) => api.post('/auth/verify-phone-otp', data),
 };
 
 export const mealsAPI = {

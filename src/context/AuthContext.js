@@ -76,8 +76,8 @@ export const AuthProvider = ({ children }) => {
     return user;
   };
 
-  const register = async (name, email, password, phone, otp) => {
-    const res = await authAPI.register({ name, email, password, phone, otp });
+  const register = async (name, email, password) => {
+    const res = await authAPI.register({ name, email, password });
     const { user, token } = res.data.data;
     global.authToken = token;
     setToken(token);
@@ -85,14 +85,6 @@ export const AuthProvider = ({ children }) => {
     setOnboarded(false);
     await saveSession(token, user, false);
     return user;
-  };
-
-  const verifyPhone = async (phone, otp) => {
-    const res = await authAPI.verifyPhoneOtp({ phone, otp });
-    const updatedUser = { ...user, phone, phoneVerified: true };
-    setUser(updatedUser);
-    if (token) await saveSession(token, updatedUser, onboarded);
-    return res;
   };
 
   const completeOnboarding = async (data) => {
@@ -140,7 +132,7 @@ export const AuthProvider = ({ children }) => {
   };
 
   return (
-    <AuthContext.Provider value={{ user, token, loading, login, googleLogin, register, logout, onboarded, completeOnboarding, updateProfile, verifyPhone }}>
+    <AuthContext.Provider value={{ user, token, loading, login, googleLogin, register, logout, onboarded, completeOnboarding, updateProfile }}>
       {children}
     </AuthContext.Provider>
   );

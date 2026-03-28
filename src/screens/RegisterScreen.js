@@ -15,13 +15,11 @@ try {
 } catch {}
 
 export default function RegisterScreen({ navigation }) {
-  const [step, setStep] = useState(1); // 1=details, 2=email-otp, 3=phone, 4=phone-otp
+  const [step, setStep] = useState(1); // 1=details, 2=email-otp
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [emailOtp, setEmailOtp] = useState('');
-  const [phone, setPhone] = useState('');
-  const [otp, setOtp] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
@@ -56,37 +54,9 @@ export default function RegisterScreen({ navigation }) {
     setLoading(true);
     try {
       await api.post('/auth/verify-email-otp', { email, otp: emailOtp });
-      setStep(3);
+      await register(name, email, password);
     } catch (err) {
       setError(err.response?.data?.message || 'Invalid OTP.');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleSendOtp = async () => {
-    setError('');
-    if (!phone.trim()) return setError('Phone number is required.');
-    if (!/^\+[1-9]\d{7,14}$/.test(phone)) return setError('Enter phone with country code (e.g. +91XXXXXXXXXX).');
-    setLoading(true);
-    try {
-      await api.post('/auth/send-phone-otp', { phone });
-      setStep(4);
-    } catch (err) {
-      setError(err.response?.data?.message || 'Failed to send OTP.');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleRegister = async () => {
-    setError('');
-    if (!otp.trim() || otp.length !== 6) return setError('Enter the 6-digit OTP.');
-    setLoading(true);
-    try {
-      await register(name, email, password, phone, otp);
-    } catch (err) {
-      setError(err.response?.data?.message || 'Registration failed.');
     } finally {
       setLoading(false);
     }
@@ -131,15 +101,12 @@ export default function RegisterScreen({ navigation }) {
           <Text style={styles.logo}>🥗</Text>
           <Text style={styles.title}>Create Account</Text>
           <Text style={styles.sub}>
-            {step === 1 ? 'Start tracking your nutrition today'
-              : step === 2 ? 'Enter the OTP sent to ' + email
-              : step === 3 ? 'Enter your phone number'
-              : 'Enter the OTP sent to ' + phone}
+            {step === 1 ? 'Start tracking your nutrition today' : 'Enter the OTP sent to ' + email}
           </Text>
 
           {/* Step indicator */}
           <View style={styles.steps}>
-            {[1,2,3,4].map(s => (
+            {[1,2].map(s => (
               <View key={s} style={[styles.stepDot, step >= s && styles.stepDotActive]} />
             ))}
           </View>
@@ -191,46 +158,6 @@ export default function RegisterScreen({ navigation }) {
               </TouchableOpacity>
               <TouchableOpacity onPress={() => { setStep(1); setEmailOtp(''); }} style={styles.backBtn}>
                 <Text style={styles.backText}>← Back</Text>
-              </TouchableOpacity>
-            </>
-          )}
-
-          {step === 3 && (
-            <>
-              <TextInput
-                style={styles.input}
-                placeholder="+91XXXXXXXXXX"
-                placeholderTextColor="#999"
-                value={phone}
-                onChangeText={setPhone}
-                keyboardType="phone-pad"
-              />
-              <Text style={styles.hint}>Include country code e.g. +91 for India</Text>
-              <TouchableOpacity style={styles.btn} onPress={handleSendOtp} disabled={loading}>
-                <Text style={styles.btnText}>{loading ? 'Sending...' : 'Send OTP'}</Text>
-              </TouchableOpacity>
-              <TouchableOpacity onPress={() => setStep(2)} style={styles.backBtn}>
-                <Text style={styles.backText}>← Back</Text>
-              </TouchableOpacity>
-            </>
-          )}
-
-          {step === 4 && (
-            <>
-              <TextInput
-                style={[styles.input, styles.otpInput]}
-                placeholder="000000"
-                placeholderTextColor="#ccc"
-                value={otp}
-                onChangeText={setOtp}
-                keyboardType="number-pad"
-                maxLength={6}
-              />
-              <TouchableOpacity style={styles.btn} onPress={handleRegister} disabled={loading}>
-                <Text style={styles.btnText}>{loading ? 'Creating...' : 'Verify & Create Account'}</Text>
-              </TouchableOpacity>
-              <TouchableOpacity onPress={() => { setStep(3); setOtp(''); }} style={styles.backBtn}>
-                <Text style={styles.backText}>Resend OTP</Text>
               </TouchableOpacity>
             </>
           )}
