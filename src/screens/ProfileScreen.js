@@ -43,6 +43,7 @@ export default function ProfileScreen({ navigation }) {
   const [modal, setModal] = useState({ visible: false, icon: '', title: '', message: '', confirmText: '', confirmDestructive: false, onConfirm: null });
 
   const showModal = (icon, title, message) => setModal({ visible: true, icon, title, message, onConfirm: null });
+  const showConfirmModal = (icon, title, message, confirmText, onConfirm, confirmDestructive = false) => setModal({ visible: true, icon, title, message, confirmText, onConfirm, confirmDestructive });
   const hideModal = () => setModal(prev => ({ ...prev, visible: false }));
 
   const handleTurnPro = async () => {
@@ -151,6 +152,18 @@ export default function ProfileScreen({ navigation }) {
         ) : (
           <View style={styles.proBadgeCard}>
             <Text style={styles.proBadgeText}>✨ You're on Pro</Text>
+            <TouchableOpacity onPress={() => showConfirmModal('⚠️', 'Cancel Pro?', 'You will lose your Pro benefits at the end of the billing cycle and revert to the free plan.', 'Cancel Pro', async () => {
+              hideModal();
+              try {
+                await api.post('/subscription/cancel');
+                await updateProfile({ plan: 'free' });
+                showModal('✅', 'Pro Cancelled', 'Your plan has been downgraded to Free.');
+              } catch {
+                showModal('❌', 'Error', 'Failed to cancel subscription. Please try again.');
+              }
+            }, true)}>
+              <Text style={styles.cancelProText}>Cancel subscription</Text>
+            </TouchableOpacity>
           </View>
         )}
 
@@ -248,6 +261,7 @@ const styles = StyleSheet.create({
   proCardSub: { fontSize: 12, color: 'rgba(255,255,255,0.8)', marginTop: 2 },
   proCardBtn: { backgroundColor: 'rgba(255,255,255,0.25)', borderRadius: 12, paddingHorizontal: 12, paddingVertical: 6 },
   proCardBtnText: { color: '#fff', fontWeight: '800', fontSize: 14 },
-  proBadgeCard: { marginHorizontal: 16, marginTop: 12, backgroundColor: '#FFF3EE', borderRadius: 20, padding: 14, alignItems: 'center', borderWidth: 1, borderColor: '#FF6B35' },
+  proBadgeCard: { marginHorizontal: 16, marginTop: 12, backgroundColor: '#FFF3EE', borderRadius: 20, padding: 14, alignItems: 'center', borderWidth: 1, borderColor: '#FF6B35', gap: 6 },
   proBadgeText: { color: '#FF6B35', fontWeight: '700', fontSize: 14 },
+  cancelProText: { color: '#999', fontSize: 12, textDecorationLine: 'underline' },
 });

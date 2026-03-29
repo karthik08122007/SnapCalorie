@@ -1,5 +1,5 @@
 import { useState, useRef } from 'react';
-import { View, Text, ScrollView, StyleSheet, Image, TouchableOpacity, StatusBar, ActivityIndicator } from 'react-native';
+import { View, Text, ScrollView, StyleSheet, Image, TouchableOpacity, StatusBar, ActivityIndicator, TextInput, Modal } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { mealsAPI } from '../services/api';
@@ -19,6 +19,15 @@ export default function MealDetailScreen({ route, navigation }) {
   const [deleting, setDeleting] = useState(false);
   const [sharing, setSharing] = useState(false);
   const [showShareCard, setShowShareCard] = useState(false);
+  const [editing, setEditing] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [editData, setEditData] = useState({
+    calories: String(meal.calories || ''),
+    protein_g: String(meal.protein_g || ''),
+    carbs_g: String(meal.carbs_g || ''),
+    fat_g: String(meal.fat_g || ''),
+  });
+  const [mealData, setMealData] = useState(meal);
   const shareCardRef = useRef(null);
   const [modal, setModal] = useState({ visible: false, icon: '', title: '', message: '', confirmText: '', confirmDestructive: false, onConfirm: null });
 
@@ -26,12 +35,33 @@ export default function MealDetailScreen({ route, navigation }) {
   const showConfirmModal = (icon, title, message, confirmText, onConfirm, confirmDestructive = false) => setModal({ visible: true, icon, title, message, confirmText, onConfirm, confirmDestructive });
   const hideModal = () => setModal(prev => ({ ...prev, visible: false }));
 
+  const handleSaveEdit = async () => {
+    const mealId = mealData._id || mealData.id;
+    if (!mealId) { showModal('❌', 'Error', 'Cannot edit this meal'); return; }
+    setSaving(true);
+    try {
+      const updated = {
+        calories: Number(editData.calories) || 0,
+        protein_g: Number(editData.protein_g) || 0,
+        carbs_g: Number(editData.carbs_g) || 0,
+        fat_g: Number(editData.fat_g) || 0,
+      };
+      await mealsAPI.update(mealId, updated);
+      setMealData(prev => ({ ...prev, ...updated }));
+      setEditing(false);
+    } catch {
+      showModal('❌', 'Error', 'Failed to save changes.');
+    } finally {
+      setSaving(false);
+    }
+  };
+
   // Calculate health score for this meal
   const { score: healthScore, message: healthMessage } = calculateMealHealthScore({
-    calories: meal.calories,
-    protein_g: meal.protein_g,
-    carbs_g: meal.carbs_g,
-    fat_g: meal.fat_g,
+    calories: mealData.calories,
+    protein_g: mealData.protein_g,
+    carbs_g: mealData.carbs_g,
+    fat_g: mealData.fat_g,
   });
 
   const handleShare = async () => {
@@ -56,11 +86,11 @@ export default function MealDetailScreen({ route, navigation }) {
     }, 300);
   };
 
-  const rawUrl = meal.image_url;
+  const rawUrl = mealData.image_url;
   const imageUri = rawUrl && !rawUrl.startsWith('http') ? `${BASE_URL}${rawUrl}` : rawUrl;
 
   const handleDelete = () => {
-    const mealId = meal._id || meal.id;
+    const mealId = mealData._id || mealData.id;
     showConfirmModal('🗑️', 'Delete Meal', 'Remove this meal from your diary?', 'Delete', async () => {
       hideModal();
       if (!mealId) {
@@ -79,18 +109,18 @@ export default function MealDetailScreen({ route, navigation }) {
     }, true);
   };
 
-  const macroTotal = (meal.protein_g || 0) + (meal.carbs_g || 0) + (meal.fat_g || 0);
+  const macroTotal = (mealData.protein_g || 0) + (mealData.carbs_g || 0) + (mealData.fat_g || 0);
   const macros = [
-    { label: 'Protein', value: meal.protein_g || 0, unit: 'g', color: '#FF6B35', pct: macroTotal > 0 ? Math.round((meal.protein_g / macroTotal) * 100) : 0 },
-    { label: 'Carbs', value: meal.carbs_g || 0, unit: 'g', color: '#4ECDC4', pct: macroTotal > 0 ? Math.round((meal.carbs_g / macroTotal) * 100) : 0 },
-    { label: 'Fat', value: meal.fat_g || 0, unit: 'g', color: '#FFD93D', pct: macroTotal > 0 ? Math.round((meal.fat_g / macroTotal) * 100) : 0 },
+    { label: 'Protein', value: mealData.protein_g || 0, unit: 'g', color: '#FF6B35', pct: macroTotal > 0 ? Math.round((mealData.protein_g / macroTotal) * 100) : 0 },
+    { label: 'Carbs', value: mealData.carbs_g || 0, unit: 'g', color: '#4ECDC4', pct: macroTotal > 0 ? Math.round((mealData.carbs_g / macroTotal) * 100) : 0 },
+    { label: 'Fat', value: mealData.fat_g || 0, unit: 'g', color: '#FFD93D', pct: macroTotal > 0 ? Math.round((mealData.fat_g / macroTotal) * 100) : 0 },
   ];
 
   const extras = [
-    meal.fiber_g != null && { label: 'Fiber', value: meal.fiber_g, unit: 'g' },
-    meal.sugar_g != null && { label: 'Sugar', value: meal.sugar_g, unit: 'g' },
-    meal.sodium_mg != null && { label: 'Sodium', value: meal.sodium_mg, unit: 'mg' },
-    meal.cholesterol_mg != null && { label: 'Cholesterol', value: meal.cholesterol_mg, unit: 'mg' },
+    mealData.fiber_g != null && { label: 'Fiber', value: mealData.fiber_g, unit: 'g' },
+    mealData.sugar_g != null && { label: 'Sugar', value: mealData.sugar_g, unit: 'g' },
+    mealData.sodium_mg != null && { label: 'Sodium', value: mealData.sodium_mg, unit: 'mg' },
+    mealData.cholesterol_mg != null && { label: 'Cholesterol', value: mealData.cholesterol_mg, unit: 'mg' },
   ].filter(Boolean);
 
   const showImage = imageUri && !imgError;
@@ -106,16 +136,13 @@ export default function MealDetailScreen({ route, navigation }) {
         <Text style={styles.headerTitle}>Meal Details</Text>
         <View style={{ flexDirection: 'row', gap: 4 }}>
           <TouchableOpacity onPress={handleShare} style={styles.deleteBtn} disabled={sharing}>
-            {sharing
-              ? <ActivityIndicator size="small" color="#FF6B35" />
-              : <Ionicons name="share-outline" size={22} color="#FF6B35" />
-            }
+            {sharing ? <ActivityIndicator size="small" color="#FF6B35" /> : <Ionicons name="share-outline" size={22} color="#FF6B35" />}
+          </TouchableOpacity>
+          <TouchableOpacity onPress={() => { setEditData({ calories: String(mealData.calories || ''), protein_g: String(mealData.protein_g || ''), carbs_g: String(mealData.carbs_g || ''), fat_g: String(mealData.fat_g || '') }); setEditing(true); }} style={styles.deleteBtn}>
+            <Ionicons name="pencil-outline" size={22} color="#4ECDC4" />
           </TouchableOpacity>
           <TouchableOpacity onPress={handleDelete} style={styles.deleteBtn} disabled={deleting}>
-            {deleting
-              ? <ActivityIndicator size="small" color="#ff4444" />
-              : <Ionicons name="trash-outline" size={22} color="#ff4444" />
-            }
+            {deleting ? <ActivityIndicator size="small" color="#ff4444" /> : <Ionicons name="trash-outline" size={22} color="#ff4444" />}
           </TouchableOpacity>
         </View>
       </View>
@@ -135,16 +162,16 @@ export default function MealDetailScreen({ route, navigation }) {
         )}
 
         <View style={styles.content}>
-          <Text style={styles.foodName}>{meal.food_name}</Text>
+          <Text style={styles.foodName}>{mealData.food_name}</Text>
           <Text style={styles.timestamp}>
-            {new Date(meal.analyzed_at).toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
+            {new Date(mealData.analyzed_at).toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
             {' · '}
-            {new Date(meal.analyzed_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+            {new Date(mealData.analyzed_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
           </Text>
 
           <View style={styles.calorieCard}>
             <Text style={styles.calorieLabel}>Total Calories</Text>
-            <Text style={styles.calorieValue}>{meal.calories}</Text>
+            <Text style={styles.calorieValue}>{mealData.calories}</Text>
             <Text style={styles.calorieUnit}>kcal</Text>
           </View>
 
@@ -200,6 +227,39 @@ export default function MealDetailScreen({ route, navigation }) {
         </View>
         <View style={{ height: 100 }} />
       </ScrollView>
+
+      {/* Edit nutrition modal */}
+      <Modal visible={editing} transparent animationType="fade" onRequestClose={() => setEditing(false)}>
+        <View style={styles.editOverlay}>
+          <View style={styles.editBox}>
+            <Text style={styles.editTitle}>Edit Nutrition</Text>
+            {[
+              { key: 'calories', label: 'Calories (kcal)' },
+              { key: 'protein_g', label: 'Protein (g)' },
+              { key: 'carbs_g', label: 'Carbs (g)' },
+              { key: 'fat_g', label: 'Fat (g)' },
+            ].map(f => (
+              <View key={f.key} style={styles.editRow}>
+                <Text style={styles.editLabel}>{f.label}</Text>
+                <TextInput
+                  style={styles.editInput}
+                  value={editData[f.key]}
+                  onChangeText={v => setEditData(prev => ({ ...prev, [f.key]: v }))}
+                  keyboardType="numeric"
+                />
+              </View>
+            ))}
+            <View style={styles.editBtns}>
+              <TouchableOpacity style={styles.editCancelBtn} onPress={() => setEditing(false)}>
+                <Text style={styles.editCancelText}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.editSaveBtn} onPress={handleSaveEdit} disabled={saving}>
+                {saving ? <ActivityIndicator size="small" color="#fff" /> : <Text style={styles.editSaveText}>Save</Text>}
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
 
       {/* Off-screen share card for capture */}
       {showShareCard && (
@@ -264,4 +324,15 @@ const styles = StyleSheet.create({
     alignSelf: 'flex-start',
   },
   shareBtnText: { color: '#fff', fontSize: 13, fontWeight: '700' },
+  editOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.4)', justifyContent: 'center', alignItems: 'center', padding: 24 },
+  editBox: { backgroundColor: '#fff', borderRadius: 24, padding: 24, width: '100%' },
+  editTitle: { fontSize: 18, fontWeight: '800', color: '#333', marginBottom: 16, textAlign: 'center' },
+  editRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 },
+  editLabel: { fontSize: 14, color: '#555', fontWeight: '600' },
+  editInput: { borderWidth: 1, borderColor: '#eee', borderRadius: 10, padding: 10, width: 100, textAlign: 'right', fontSize: 15, color: '#333', backgroundColor: '#fafafa' },
+  editBtns: { flexDirection: 'row', gap: 10, marginTop: 8 },
+  editCancelBtn: { flex: 1, borderWidth: 1, borderColor: '#eee', borderRadius: 12, padding: 14, alignItems: 'center' },
+  editCancelText: { color: '#999', fontWeight: '700' },
+  editSaveBtn: { flex: 1, backgroundColor: '#FF6B35', borderRadius: 12, padding: 14, alignItems: 'center' },
+  editSaveText: { color: '#fff', fontWeight: '700' },
 });

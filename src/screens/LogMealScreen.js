@@ -14,6 +14,7 @@ export default function LogMealScreen({ navigation }) {
   const [analyzing, setAnalyzing] = useState(false);
   const [query, setQuery] = useState('');
   const [mode, setMode] = useState('photo');
+  const [mealType, setMealType] = useState('Breakfast');
   const [recentFoods, setRecentFoods] = useState([]);
   const [modal, setModal] = useState({ visible: false, icon: '', title: '', message: '', confirmText: '', confirmDestructive: false, onConfirm: null });
 
@@ -54,7 +55,7 @@ export default function LogMealScreen({ navigation }) {
       const compressedUri = await compressMealImage(asset.uri);
       const formData = new FormData();
       formData.append('image', { uri: compressedUri, type: 'image/jpeg', name: 'meal.jpg' });
-      formData.append('mealType', 'Snack');
+      formData.append('mealType', mealType);
       const res = await mealsAPI.analyze(formData);
       const meal = res.data?.data || res.data;
       trackEvent('meal_scan_completed', { scan_time_ms: Date.now() - scanStart, source: 'photo' });
@@ -72,7 +73,7 @@ export default function LogMealScreen({ navigation }) {
     const scanStart = Date.now();
     trackEvent('meal_scan_started', { source: 'text' });
     try {
-      const res = await mealsAPI.analyzeText(query, 'Snack');
+      const res = await mealsAPI.analyzeText(query, mealType);
       const meal = res.data?.data || res.data;
       trackEvent('meal_scan_completed', { scan_time_ms: Date.now() - scanStart, source: 'text' });
       navigation.navigate('MealReview', { meal, imageUri: null });
@@ -112,6 +113,18 @@ export default function LogMealScreen({ navigation }) {
         <TouchableOpacity style={[styles.tab, mode === 'text' && styles.tabActive]} onPress={() => setMode('text')}>
           <Text style={[styles.tabText, mode === 'text' && styles.tabTextActive]}>🔍 Search</Text>
         </TouchableOpacity>
+      </View>
+
+      <View style={styles.mealTypeRow}>
+        {['Breakfast', 'Lunch', 'Dinner', 'Snack'].map(type => (
+          <TouchableOpacity
+            key={type}
+            style={[styles.mealTypeBtn, mealType === type && styles.mealTypeBtnActive]}
+            onPress={() => setMealType(type)}
+          >
+            <Text style={[styles.mealTypeBtnText, mealType === type && styles.mealTypeBtnTextActive]}>{type}</Text>
+          </TouchableOpacity>
+        ))}
       </View>
 
       {analyzing ? (
@@ -220,6 +233,11 @@ const styles = StyleSheet.create({
   tabActive: { backgroundColor: '#fff', shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.1, shadowRadius: 4, elevation: 2 },
   tabText: { fontSize: 14, fontWeight: '600', color: '#999' },
   tabTextActive: { color: '#333' },
+  mealTypeRow: { flexDirection: 'row', marginHorizontal: 16, marginBottom: 8, gap: 8 },
+  mealTypeBtn: { flex: 1, paddingVertical: 8, borderRadius: 10, borderWidth: 1.5, borderColor: '#e0e0e0', alignItems: 'center', backgroundColor: '#fafafa' },
+  mealTypeBtnActive: { backgroundColor: '#FF6B35', borderColor: '#FF6B35' },
+  mealTypeBtnText: { fontSize: 12, fontWeight: '700', color: '#888' },
+  mealTypeBtnTextActive: { color: '#fff' },
   photoContainer: { padding: 16, gap: 12 },
   photoBtn: { flexDirection: 'row', alignItems: 'center', gap: 14, backgroundColor: '#fff', borderRadius: 16, padding: 20, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.06, shadowRadius: 8, elevation: 3 },
   photoBtnText: { flex: 1 },
