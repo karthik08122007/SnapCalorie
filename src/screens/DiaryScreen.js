@@ -2,8 +2,10 @@ import { useState, useCallback, useEffect } from 'react';
 import { View, Text, ScrollView, StyleSheet, Image, TouchableOpacity, RefreshControl, StatusBar } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { mealsAPI, waterAPI } from '../services/api';
 import { trackEvent } from '../utils/analytics';
+import { WATER_GOAL_KEY } from './NotificationsScreen';
 
 const BASE_URL = (process.env.EXPO_PUBLIC_API_URL || 'https://snapcalorie-backend-production.up.railway.app/api').replace('/api', '');
 
@@ -22,18 +24,18 @@ function MealThumb({ imageUrl }) {
   return <Text style={{ fontSize: 24 }}>🍽️</Text>;
 }
 
-const WATER_GOAL = 8;
-
 export default function DiaryScreen({ navigation }) {
   const insets = useSafeAreaInsets();
   const [meals, setMeals] = useState([]);
   const [refreshing, setRefreshing] = useState(false);
   const [water, setWaterState] = useState(0);
+  const [waterGoal, setWaterGoal] = useState(8);
   const todayDate = new Date().toISOString().slice(0, 10);
 
-  // Load today's water count from backend on mount
+  // Load today's water count and goal on mount
   useEffect(() => {
     waterAPI.get(todayDate).then(res => setWaterState(res.data.data?.glasses ?? 0)).catch(() => {});
+    AsyncStorage.getItem(WATER_GOAL_KEY).then(val => { if (val) setWaterGoal(Number(val)); }).catch(() => {});
   }, []);
 
   const setWater = useCallback((updater) => {
@@ -87,12 +89,12 @@ export default function DiaryScreen({ navigation }) {
         <View style={styles.waterCard}>
           <View style={styles.waterHeader}>
             <Text style={styles.waterTitle}>💧 Water Intake</Text>
-            <Text style={styles.waterCount}>{water}/{WATER_GOAL} glasses</Text>
+            <Text style={styles.waterCount}>{water}/{waterGoal}L</Text>
           </View>
           <View style={styles.waterGlasses}>
-            {Array.from({ length: WATER_GOAL }).map((_, i) => (
+            {Array.from({ length: waterGoal }).map((_, i) => (
               <TouchableOpacity key={i} onPress={() => setWater(i + 1)}>
-                <Text style={{ fontSize: 24, opacity: i < water ? 1 : 0.2 }}>💧</Text>
+                <Text style={{ fontSize: 28, opacity: i < water ? 1 : 0.15 }}>💧</Text>
               </TouchableOpacity>
             ))}
           </View>
@@ -100,8 +102,8 @@ export default function DiaryScreen({ navigation }) {
             <TouchableOpacity style={styles.waterRemove} onPress={() => setWater(w => Math.max(0, w - 1))}>
               <Text style={styles.waterRemoveText}>−</Text>
             </TouchableOpacity>
-            <TouchableOpacity style={styles.waterAdd} onPress={() => setWater(w => Math.min(WATER_GOAL, w + 1))}>
-              <Text style={styles.waterAddText}>+ Add Glass</Text>
+            <TouchableOpacity style={styles.waterAdd} onPress={() => setWater(w => Math.min(waterGoal, w + 1))}>
+              <Text style={styles.waterAddText}>+ Add Litre</Text>
             </TouchableOpacity>
           </View>
         </View>

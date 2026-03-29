@@ -15,6 +15,7 @@ import {
 const WATER_CHANNEL_ID = 'water-reminder';
 const WATER_IDS_KEY = 'water_reminder_ids';
 const WATER_INTERVAL_KEY = 'water_reminder_interval';
+export const WATER_GOAL_KEY = 'water_goal_liters';
 
 const INTERVALS = [
   { label: '30 min', value: 30 },
@@ -127,6 +128,7 @@ export default function NotificationsScreen({ navigation }) {
     waterReminder: false,
   });
   const [waterInterval, setWaterInterval] = useState(60);
+  const [waterGoal, setWaterGoal] = useState(8);
   const [loading, setLoading] = useState({});
 
   // Restore all persisted states on mount
@@ -139,9 +141,11 @@ export default function NotificationsScreen({ navigation }) {
       isWeeklyReportEnabled(),
       AsyncStorage.getItem(WATER_IDS_KEY),
       AsyncStorage.getItem(WATER_INTERVAL_KEY),
-    ]).then(([goalAlerts, mealReminders, dailySummary, tips, weeklyReport, waterRaw, intervalRaw]) => {
+      AsyncStorage.getItem(WATER_GOAL_KEY),
+    ]).then(([goalAlerts, mealReminders, dailySummary, tips, weeklyReport, waterRaw, intervalRaw, goalRaw]) => {
       setSettings(prev => ({ ...prev, goalAlerts, mealReminders, dailySummary, tips, weeklyReport, waterReminder: !!waterRaw }));
       if (intervalRaw) setWaterInterval(Number(intervalRaw));
+      if (goalRaw) setWaterGoal(Number(goalRaw));
     });
   }, []);
 
@@ -258,6 +262,11 @@ export default function NotificationsScreen({ navigation }) {
     }
   };
 
+  const handleGoalChange = async (goal) => {
+    setWaterGoal(goal);
+    await AsyncStorage.setItem(WATER_GOAL_KEY, String(goal));
+  };
+
   const activeLabel = INTERVALS.find(i => i.value === waterInterval)?.label || '1 hr';
 
   const items = [
@@ -352,6 +361,21 @@ export default function NotificationsScreen({ navigation }) {
             </View>
           </View>
 
+          <View style={styles.intervalSection}>
+            <Text style={styles.intervalLabel}>Daily water goal · {waterGoal} litre{waterGoal > 1 ? 's' : ''}</Text>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.goalRow}>
+              {Array.from({ length: 10 }, (_, i) => i + 1).map(l => (
+                <TouchableOpacity
+                  key={l}
+                  style={[styles.goalBtn, waterGoal === l && styles.goalBtnActive]}
+                  onPress={() => handleGoalChange(l)}
+                >
+                  <Text style={[styles.goalBtnText, waterGoal === l && styles.goalBtnTextActive]}>{l}L</Text>
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+          </View>
+
           {settings.waterReminder && (
             <View style={styles.waterBadge}>
               <Ionicons name="checkmark-circle" size={14} color="#45B7D1" />
@@ -405,6 +429,11 @@ const styles = StyleSheet.create({
   intervalBtnActive: { backgroundColor: '#45B7D1', borderColor: '#45B7D1' },
   intervalBtnText: { fontSize: 13, fontWeight: '700', color: '#666' },
   intervalBtnTextActive: { color: '#fff' },
+  goalRow: { flexDirection: 'row', gap: 8, paddingVertical: 2 },
+  goalBtn: { paddingVertical: 8, paddingHorizontal: 14, borderRadius: 12, borderWidth: 1.5, borderColor: '#e0e0e0', backgroundColor: '#fafafa' },
+  goalBtnActive: { backgroundColor: '#45B7D1', borderColor: '#45B7D1' },
+  goalBtnText: { fontSize: 13, fontWeight: '700', color: '#666' },
+  goalBtnTextActive: { color: '#fff' },
   waterBadge: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 12, paddingTop: 12, borderTopWidth: 1, borderTopColor: '#f0f0f0' },
   waterBadgeText: { fontSize: 12, color: '#45B7D1', fontWeight: '600' },
   card: { backgroundColor: '#fff', borderRadius: 20, overflow: 'hidden', shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.06, shadowRadius: 8, elevation: 3 },
