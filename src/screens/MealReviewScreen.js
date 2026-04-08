@@ -6,13 +6,13 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { mealsAPI } from '../services/api';
+import { mealsAPI, API_URL } from '../services/api';
 import { saveFoodToHistory, findSimilarFood } from '../services/foodHistory';
 import { PORTION_SIZES } from '../utils/portionHelper';
 import { trackEvent } from '../utils/analytics';
 import AppModal from '../components/AppModal';
 
-const BASE_URL = (process.env.EXPO_PUBLIC_API_URL || 'https://snapcalorie-backend-production.up.railway.app/api').replace('/api', '');
+const BASE_URL = API_URL.replace('/api', '');
 
 // Normalize backend meal into a list of editable items
 function initItems(meal) {
@@ -190,6 +190,10 @@ export default function MealReviewScreen({ route, navigation }) {
   // Image
   const rawUrl = meal.image_url;
   const serverImageUri = rawUrl && !rawUrl.startsWith('http') ? `${BASE_URL}${rawUrl}` : rawUrl;
+  const isFirstPartyServerImage = serverImageUri?.startsWith(BASE_URL);
+  const serverImageSource = isFirstPartyServerImage
+    ? { uri: serverImageUri, headers: { Authorization: `Bearer ${global.authToken}` } }
+    : { uri: serverImageUri };
   const displayImage = imageUri || (!imgError && serverImageUri ? serverImageUri : null);
 
   // Extra nutrition from original meal object
@@ -246,7 +250,7 @@ export default function MealReviewScreen({ route, navigation }) {
     if (!refineQuery.trim()) return;
     setRefining(true);
     try {
-      const res = await mealsAPI.analyzeText(refineQuery, 'Snack');
+      const res = await mealsAPI.analyzeText(refineQuery, meal.meal_type || 'snack');
       const refined = res.data?.data || res.data;
       const newId = refined._id || refined.id;
       if (newId) { try { await mealsAPI.delete(newId); } catch {} }
@@ -276,7 +280,7 @@ export default function MealReviewScreen({ route, navigation }) {
         });
       } else {
         // Quick-add from history — create a new meal via text analysis
-        const res = await mealsAPI.analyzeText(confirmedName, 'Snack');
+        const res = await mealsAPI.analyzeText(confirmedName, meal.meal_type || 'snack');
         const created = res.data?.data || res.data;
         const newId = created._id || created.id;
         if (newId) {
@@ -330,7 +334,7 @@ export default function MealReviewScreen({ route, navigation }) {
             <Image
               source={imageUri
                 ? { uri: imageUri }
-                : { uri: serverImageUri, headers: { Authorization: `Bearer ${global.authToken}` } }
+                : serverImageSource
               }
               style={styles.heroImage}
               resizeMode="cover"
@@ -349,18 +353,18 @@ export default function MealReviewScreen({ route, navigation }) {
             </View>
             <View style={styles.overlaySep} />
             <View style={styles.overlayItem}>
-              <Text style={[styles.overlayValue, { color: '#FF6B6B' }]}>{totals.fat_g}</Text>
-              <Text style={styles.overlayLabel}>Fat (g)</Text>
+              <Text style={[styles.overlayValue, { color: '#FF6B6B' }]}>{totals.protein_g}</Text>
+              <Text style={styles.overlayLabel}>Protein (g)</Text>
             </View>
             <View style={styles.overlaySep} />
             <View style={styles.overlayItem}>
-              <Text style={[styles.overlayValue, { color: '#FFD93D' }]}>{totals.carbs_g}</Text>
+              <Text style={[styles.overlayValue, { color: '#4ECDC4' }]}>{totals.carbs_g}</Text>
               <Text style={styles.overlayLabel}>Carbs (g)</Text>
             </View>
             <View style={styles.overlaySep} />
             <View style={styles.overlayItem}>
-              <Text style={[styles.overlayValue, { color: '#A78BFA' }]}>{totals.protein_g}</Text>
-              <Text style={styles.overlayLabel}>Protein (g)</Text>
+              <Text style={[styles.overlayValue, { color: '#FFD93D' }]}>{totals.fat_g}</Text>
+              <Text style={styles.overlayLabel}>Fat (g)</Text>
             </View>
           </View>
         </View>

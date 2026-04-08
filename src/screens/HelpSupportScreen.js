@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, ScrollView, StatusBar, Linking } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { version as appVersion } from '../../package.json';
 
 const faqs = [
   { q: 'How do I log a meal?', a: 'Tap the + button at the bottom of the screen. You can take a photo of your food or search by name to log meals.' },
@@ -53,7 +54,7 @@ export default function HelpSupportScreen({ navigation }) {
           ))}
         </View>
 
-        <Text style={styles.version}>SnapCalorie v1.0.0</Text>
+        <Text style={styles.version}>SnapCalorie v{appVersion}</Text>
       </ScrollView>
     </View>
   );

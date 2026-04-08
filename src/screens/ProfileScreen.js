@@ -6,7 +6,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../context/AuthContext';
-import { mealsAPI } from '../services/api';
+import { mealsAPI, API_URL } from '../services/api';
 import api from '../services/api';
 import AppModal from '../components/AppModal';
 
@@ -199,7 +199,7 @@ export default function ProfileScreen({ navigation }) {
         <TouchableOpacity style={styles.exportBtn} onPress={async () => {
           try {
             setExporting(true);
-            const API_BASE = (process.env.EXPO_PUBLIC_API_URL || 'https://snapcalorie-backend-production.up.railway.app/api');
+            const API_BASE = API_URL;
             const fileUri = FileSystem.cacheDirectory + 'snapcalorie-export.pdf';
             const result = await FileSystem.downloadAsync(
               `${API_BASE}/auth/export`,
@@ -210,8 +210,8 @@ export default function ProfileScreen({ navigation }) {
               throw new Error(`Server returned ${result.status}`);
             }
             await Sharing.shareAsync(result.uri, { mimeType: 'application/pdf', dialogTitle: 'SnapCalorie Data Export', UTI: 'com.adobe.pdf' });
-          } catch {
-            showModal('❌', 'Export failed', 'Could not export your data. Please try again.');
+          } catch (err) {
+            showModal('❌', 'Export failed', err?.message || 'Could not export your data. Please try again.');
           } finally {
             setExporting(false);
           }

@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const API_URL = process.env.EXPO_PUBLIC_API_URL || 'https://snapcalorie-backend-production.up.railway.app/api';
+export const API_URL = process.env.EXPO_PUBLIC_API_URL || 'https://snapcalorie-backend-production.up.railway.app/api';
 
 const api = axios.create({ baseURL: API_URL });
 
@@ -9,6 +9,19 @@ api.interceptors.request.use((config) => {
   if (token) config.headers.Authorization = `Bearer ${token}`;
   return config;
 });
+
+// Handle expired/invalid tokens — clear session so AuthContext redirects to login
+api.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error.response?.status === 401 && global.authToken) {
+      global.authToken = null;
+      // Signal AuthContext to clear session via a global flag
+      if (typeof global.onAuthExpired === 'function') global.onAuthExpired();
+    }
+    return Promise.reject(error);
+  }
+);
 
 export const authAPI = {
   register: (data) => api.post('/auth/register', data),
@@ -26,7 +39,7 @@ export const mealsAPI = {
     headers: { 'Content-Type': 'multipart/form-data' },
   }),
   analyzeText: (query, mealType) => api.post('/meals/analyze-text', { query, mealType }),
-  getAll: (page = 1, limit = 100) => api.get(`/meals?page=${page}&limit=${limit}`),
+  getAll: (page = 1, limit = 50) => api.get(`/meals?page=${page}&limit=${limit}`),
   delete: (id) => api.delete(`/meals/${id}`),
   update: (id, data) => api.patch(`/meals/${id}`, data),
 };

@@ -2,7 +2,7 @@ import { useState, useCallback, useEffect } from 'react';
 import { View, Text, ScrollView, StyleSheet, TouchableOpacity, RefreshControl, StatusBar, Image, Dimensions, Modal } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
-import { mealsAPI, authAPI } from '../services/api';
+import { mealsAPI, authAPI, API_URL } from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import Svg, { Circle } from 'react-native-svg';
 import { checkGoalNotifications } from '../services/notifications';
@@ -11,7 +11,7 @@ const SCREEN_WIDTH = Dimensions.get('window').width;
 const CARD_WIDTH = SCREEN_WIDTH - 32;
 
 const DAYS = ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'];
-const BASE_URL = (process.env.EXPO_PUBLIC_API_URL || 'https://snapcalorie-backend-production.up.railway.app/api').replace('/api', '');
+const BASE_URL = API_URL.replace('/api', '');
 
 function CalorieRing({ consumed, goal }) {
   const size = 200;
@@ -40,10 +40,14 @@ function CalorieRing({ consumed, goal }) {
 function MealThumb({ imageUrl }) {
   const [error, setError] = useState(false);
   const fullUri = imageUrl && !imageUrl.startsWith('http') ? `${BASE_URL}${imageUrl}` : imageUrl;
+  const isFirstPartyImage = fullUri?.startsWith(BASE_URL);
+  const imageSource = isFirstPartyImage
+    ? { uri: fullUri, headers: { Authorization: `Bearer ${global.authToken}` } }
+    : { uri: fullUri };
   if (fullUri && !error) {
     return (
       <Image
-        source={{ uri: fullUri, headers: { Authorization: `Bearer ${global.authToken}` } }}
+        source={imageSource}
         style={styles.mealImg}
         onError={() => setError(true)}
       />
@@ -143,6 +147,7 @@ export default function HomeScreen({ navigation }) {
   const [cardPage, setCardPage] = useState(0);
   const [scanInfo, setScanInfo] = useState(null);
   const [tooltipVisible, setTooltipVisible] = useState(false);
+  const [fetchError, setFetchError] = useState(false);
 
   const goalCalories = (() => {
     if (user?.dailyCalorieGoal) return user.dailyCalorieGoal;
@@ -174,7 +179,10 @@ export default function HomeScreen({ navigation }) {
     try {
       const res = await mealsAPI.getAll();
       setMeals(res.data.data);
-    } catch {}
+      setFetchError(false);
+    } catch {
+      setFetchError(true);
+    }
   }, []);
 
   const fetchScanInfo = useCallback(async () => {
@@ -267,10 +275,10 @@ export default function HomeScreen({ navigation }) {
               <View style={styles.planBadge}>
                 <Text style={styles.planBadgeText}>{scanPlan}</Text>
               </View>
-              <Text style={styles.tooltipTitle}>Scans Left</Text>
+              <Text style={styles.tooltipTitle}>Scans Used</Text>
             </View>
             <View style={styles.tooltipRow}>
-              <Text style={styles.tooltipBig}>{scansLeft !== null ? scansLeft : '—'}</Text>
+              <Text style={styles.tooltipBig}>{scansUsed !== null ? scansUsed : '—'}</Text>
               <Text style={styles.tooltipOf}> / {scansLimit}</Text>
             </View>
             <View style={styles.tooltipProgressBg}>
@@ -285,6 +293,11 @@ export default function HomeScreen({ navigation }) {
         </TouchableOpacity>
       </Modal>
 
+      {fetchError && (
+        <TouchableOpacity style={styles.errorBanner} onPress={onRefresh}>
+          <Text style={styles.errorBannerText}>Could not load data. Tap to retry.</Text>
+        </TouchableOpacity>
+      )}
       <ScrollView refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}>
         <View style={styles.header}>
           <Text style={styles.brand}>SnapCalorie</Text>
@@ -297,15 +310,15 @@ export default function HomeScreen({ navigation }) {
                 </Text>
               </View>
             </View>
-            {scansLeft !== null && (
+            {scansUsed !== null && (
               <TouchableOpacity
-                style={[styles.scanBadge, scansLeft <= 3 && styles.scanBadgeLow]}
+                style={[styles.scanBadge, scansUsed >= scansLimit - 3 && styles.scanBadgeLow]}
                 onPress={() => setTooltipVisible(true)}
                 onLongPress={() => setTooltipVisible(true)}
                 delayLongPress={800}
               >
-                <Text style={[styles.scanBadgeText, scansLeft <= 3 && styles.scanBadgeTextLow]}>
-                  📷 {scansLeft}/{scansLimit}
+                <Text style={[styles.scanBadgeText, scansUsed >= scansLimit - 3 && styles.scanBadgeTextLow]}>
+                  📷 {scansUsed}/{scansLimit}
                 </Text>
               </TouchableOpacity>
             )}
@@ -415,6 +428,8 @@ export default function HomeScreen({ navigation }) {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#f8f8f8' },
+  errorBanner: { backgroundColor: '#ff4444', paddingVertical: 8, paddingHorizontal: 16, alignItems: 'center' },
+  errorBannerText: { color: '#fff', fontSize: 13, fontWeight: '600' },
   header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: 20, backgroundColor: '#fff' },
   brand: { fontSize: 22, fontWeight: '800', color: '#FF6B35' },
   streak: { fontSize: 16, fontWeight: '700', color: '#FF6B35' },

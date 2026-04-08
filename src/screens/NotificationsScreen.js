@@ -12,7 +12,7 @@ import {
   scheduleWeeklyReport, cancelWeeklyReport, isWeeklyReportEnabled,
 } from '../services/notifications';
 
-const WATER_CHANNEL_ID = 'water-reminder';
+const WATER_CHANNEL_ID = 'water-reminder-v2';
 const WATER_IDS_KEY = 'water_reminder_ids';
 const WATER_INTERVAL_KEY = 'water_reminder_interval';
 export const WATER_GOAL_KEY = 'water_goal_liters';

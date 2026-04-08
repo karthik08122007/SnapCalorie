@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>SnapCalorie Splash V1</title>
+<style>
+  *{margin:0;padding:0;box-sizing:border-box;}
+  body{
+    background:#e0e0e0;display:flex;align-items:center;
+    justify-content:center;min-height:100vh;
+    font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+  }
+  .phone{
+    width:320px;height:620px;background:white;border-radius:40px;
+    box-shadow:0 30px 80px rgba(0,0,0,0.25);overflow:hidden;position:relative;
+    display:flex;align-items:center;justify-content:center;flex-direction:column;
+  }
+  #splash{
+    position:absolute;inset:0;background:#fff;
+    display:flex;flex-direction:column;align-items:center;justify-content:center;
+    z-index:10;animation:fadeOut 0.4s ease 5s forwards;
+  }
+  @keyframes fadeOut{to{opacity:0;pointer-events:none;}}
+
+  .frame-wrap{
+    width:220px;height:220px;position:relative;
+    display:flex;align-items:center;justify-content:center;
+  }
+
+  /* Step 1 — orange box bounces in */
+  .logo-box{
+    position:absolute;
+    width:196px;height:196px;border-radius:44px;
+    background:linear-gradient(135deg,#FF6030 0%,#FF8850 48%,#FFAE82 100%);
+    transform:scale(0);
+    animation:boxIn 0.54s cubic-bezier(0.34,1.56,0.64,1) 0.1s forwards;
+  }
+  @keyframes boxIn{to{transform:scale(1);}}
+
+  /* Step 2 — icon pops up */
+  .icon-img{
+    position:absolute;
+    width:150px;height:150px;border-radius:34px;
+    opacity:0;transform:translateY(40px) scale(0.1);
+    animation:iconIn 0.5s cubic-bezier(0.34,1.65,0.64,1) 0.76s forwards;
+  }
+  @keyframes iconIn{to{opacity:1;transform:translateY(0) scale(1);}}
+
+  /* Step 3 — scanner brackets fade in */
+  .scanner{
+    position:absolute;
+    width:90px;height:90px;
+    opacity:0;
+    animation:scannerIn 0.28s ease 1.4s forwards;
+  }
+  @keyframes scannerIn{to{opacity:1;}}
+
+  .corner{
+    position:absolute;
+    width:22px;height:22px;
+    border-color:#fff;border-style:solid;border-width:0;
+  }
+  .corner.tl{top:0;left:0;border-top-width:3px;border-left-width:3px;}
+  .corner.tr{top:0;right:0;border-top-width:3px;border-right-width:3px;}
+  .corner.bl{bottom:0;left:0;border-bottom-width:3px;border-left-width:3px;}
+  .corner.br{bottom:0;right:0;border-bottom-width:3px;border-right-width:3px;}
+
+  /* Step 4 — scan line */
+  .scan-wrap{
+    position:absolute;width:90px;height:90px;
+    overflow:hidden;
+  }
+  .scan-line{
+    position:absolute;top:0;left:4px;right:4px;height:2px;
+    background:rgba(255,255,255,0.95);
+    box-shadow:0 0 12px 5px rgba(255,255,255,0.85);
+    opacity:0;
+    animation:scanShow 0s ease 1.4s forwards, sweep 1s ease-in-out 1.4s infinite alternate;
+  }
+  @keyframes scanShow{to{opacity:1;}}
+  .scan-line::after{
+    content:'';position:absolute;top:2px;left:0;right:0;height:20px;
+    background:linear-gradient(to bottom,rgba(255,255,255,0.2),transparent);
+  }
+  @keyframes sweep{
+    from{transform:translateY(0);}
+    to{transform:translateY(86px);}
+  }
+
+  /* Wordmark */
+  .wm{
+    margin-top:46px;text-align:center;
+    opacity:0;transform:translateY(14px);
+    animation:wmIn 0.32s ease 3.8s forwards;
+  }
+  @keyframes wmIn{to{opacity:1;transform:translateY(0);}}
+  .wm h1{font-size:30px;font-weight:800;color:#FF6B35;letter-spacing:-0.5px;}
+  .wm p{font-size:13px;color:#999;font-weight:500;margin-top:5px;}
+
+  .app-bg{
+    opacity:0;display:flex;flex-direction:column;align-items:center;gap:12px;
+    animation:show 0.4s ease 5.4s forwards;
+  }
+  @keyframes show{to{opacity:1;}}
+  .app-bg .hi{font-size:48px;}
+  .app-bg span{color:#aaa;font-size:14px;}
+
+  .replay-btn{
+    position:fixed;bottom:24px;left:50%;transform:translateX(-50%);
+    background:#FF6B35;color:white;border:none;padding:10px 24px;
+    border-radius:20px;font-size:14px;font-weight:600;cursor:pointer;
+    box-shadow:0 4px 16px rgba(255,107,53,0.4);
+  }
+</style>
+</head>
+<body>
+<div class="phone">
+  <div id="splash">
+    <div class="frame-wrap">
+
+      <!-- Step 1: Orange box -->
+      <div class="logo-box"></div>
+
+      <!-- Step 2: Icon pops up -->
+      <img class="icon-img" src="./assets/icon.png"/>
+
+      <!-- Step 3: Scanner brackets -->
+      <div class="scanner">
+        <div class="corner tl"></div>
+        <div class="corner tr"></div>
+        <div class="corner bl"></div>
+        <div class="corner br"></div>
+      </div>
+
+      <!-- Step 4: Scan line -->
+      <div class="scan-wrap">
+        <div class="scan-line"></div>
+      </div>
+
+    </div>
+    <div class="wm">
+      <h1>SnapCalorie</h1>
+      <p>AI-powered nutrition tracking</p>
+    </div>
+  </div>
+
+  <div class="app-bg">
+    <div class="hi">🏠</div>
+    <span>App loaded!</span>
+  </div>
+</div>
+<button class="replay-btn" onclick="location.reload()">↺ Replay</button>
+</body>
+</html>

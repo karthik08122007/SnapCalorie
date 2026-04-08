@@ -1,6 +1,7 @@
 import { createContext, useContext, useState, useEffect } from 'react';
 import * as SecureStore from 'expo-secure-store';
 import { authAPI } from '../services/api';
+import { clearFoodHistory } from '../services/foodHistory';
 
 const KEYS = {
   token: 'auth_token',
@@ -69,8 +70,8 @@ export const AuthProvider = ({ children }) => {
     global.authToken = token;
     setToken(token);
     setUser(user);
-    // Existing users who completed onboarding have body stats set
-    const hasOnboarded = !!(user.age || user.weightKg || user.heightCm || user.goal);
+    // Require all key fields — partial onboarding should resume from where it stopped
+    const hasOnboarded = !!(user.age && user.weightKg && user.heightCm && user.goal);
     setOnboarded(hasOnboarded);
     await saveSession(token, user, hasOnboarded);
     return user;
@@ -125,11 +126,19 @@ export const AuthProvider = ({ children }) => {
 
   const logout = async () => {
     global.authToken = null;
+    global.onAuthExpired = null;
     setToken(null);
     setUser(null);
     setOnboarded(false);
     await clearSession();
+    await clearFoodHistory();
   };
+
+  // Register a global handler so the axios interceptor can trigger logout on 401
+  useEffect(() => {
+    global.onAuthExpired = logout;
+    return () => { global.onAuthExpired = null; };
+  }, []);
 
   return (
     <AuthContext.Provider value={{ user, token, loading, login, googleLogin, register, logout, onboarded, completeOnboarding, updateProfile }}>

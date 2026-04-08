@@ -19,6 +19,25 @@ const GOALS = [
   { id: 'gain', icon: '💪', label: 'Gain muscle (Bulk)' },
 ];
 
+function GoalInput({ label, value, onChange, unit, color }) {
+  return (
+    <View style={styles.goalRow}>
+      <View style={[styles.goalDot, { backgroundColor: color }]} />
+      <View style={{ flex: 1 }}>
+        <Text style={styles.goalLabel}>{label}</Text>
+      </View>
+      <TextInput
+        style={styles.goalInput}
+        value={value}
+        onChangeText={onChange}
+        keyboardType="numeric"
+        maxLength={5}
+      />
+      <Text style={styles.goalUnit}>{unit}</Text>
+    </View>
+  );
+}
+
 export default function MyGoalsScreen({ navigation }) {
   const { user, updateProfile } = useAuth();
   const insets = useSafeAreaInsets();
@@ -54,23 +73,6 @@ export default function MyGoalsScreen({ navigation }) {
       setSaving(false);
     }
   };
-
-  const GoalInput = ({ label, value, onChange, unit, color }) => (
-    <View style={styles.goalRow}>
-      <View style={[styles.goalDot, { backgroundColor: color }]} />
-      <View style={{ flex: 1 }}>
-        <Text style={styles.goalLabel}>{label}</Text>
-      </View>
-      <TextInput
-        style={styles.goalInput}
-        value={value}
-        onChangeText={onChange}
-        keyboardType="numeric"
-        maxLength={5}
-      />
-      <Text style={styles.goalUnit}>{unit}</Text>
-    </View>
-  );
 
   return (
     <View style={[styles.container, { paddingTop: insets.top }]}>

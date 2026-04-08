@@ -2,10 +2,12 @@ import { useState, useCallback } from 'react';
 import { View, Text, ScrollView, StyleSheet, StatusBar, useWindowDimensions, RefreshControl } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import Svg, { Path, Rect, Circle, Line, Text as SvgText, Defs, LinearGradient, Stop, G } from 'react-native-svg';
 import { mealsAPI, waterAPI } from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import { calculateDailyNutritionScore, getScoreMessage } from '../utils/nutritionScore';
+import { WATER_GOAL_KEY } from './NotificationsScreen';
 
 const DAY_LABELS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
@@ -487,6 +489,7 @@ export default function InsightsScreen() {
   const [macroSel, setMacroSel] = useState(null);
   const [mealsSel, setMealsSel] = useState(null);
   const [todayWater, setTodayWater] = useState(0);
+  const [waterGoal, setWaterGoal] = useState(8);
 
   const goalCalories = (() => {
     if (user?.dailyCalorieGoal) return user.dailyCalorieGoal;
@@ -505,13 +508,16 @@ export default function InsightsScreen() {
 
   const fetchMeals = useCallback(async () => {
     try {
-      const todayDate = new Date().toISOString().split('T')[0];
-      const [mealsRes, waterRes] = await Promise.allSettled([
+      const _d = new Date();
+      const todayDate = `${_d.getFullYear()}-${String(_d.getMonth() + 1).padStart(2, '0')}-${String(_d.getDate()).padStart(2, '0')}`;
+      const [mealsRes, waterRes, goalVal] = await Promise.allSettled([
         mealsAPI.getAll(),
         waterAPI.get(todayDate),
+        AsyncStorage.getItem(WATER_GOAL_KEY),
       ]);
       if (mealsRes.status === 'fulfilled') setMeals(mealsRes.value.data.data || []);
       if (waterRes.status === 'fulfilled') setTodayWater(waterRes.value.data.data?.glasses ?? 0);
+      if (goalVal.status === 'fulfilled' && goalVal.value) setWaterGoal(Number(goalVal.value));
     } catch {}
   }, []);
 
@@ -534,7 +540,6 @@ export default function InsightsScreen() {
   const todayCarbs    = todayMeals.reduce((s, m) => s + (m.carbs_g || 0), 0);
   const todayFat      = todayMeals.reduce((s, m) => s + (m.fat_g || 0), 0);
   const proteinGoal   = user?.proteinGoal || 150;
-  const WATER_GOAL    = 8;
 
   const { score, breakdown } = calculateDailyNutritionScore({
     caloriesConsumed: todayCalories,
@@ -544,7 +549,7 @@ export default function InsightsScreen() {
     carbsConsumed: todayCarbs,
     fatConsumed: todayFat,
     waterConsumed: todayWater,
-    waterGoal: WATER_GOAL,
+    waterGoal,
   });
   const { message: scoreMessage, color: scoreColor } = getScoreMessage(score);
   const totalMeals = weekData.reduce((s, d) => s + d.count, 0);
@@ -585,6 +590,15 @@ export default function InsightsScreen() {
           message={scoreMessage}
           messageColor={scoreColor}
         />
+
+        {/* Empty state if no meals logged at all */}
+        {totalMeals === 0 && (
+          <View style={styles.emptyState}>
+            <Text style={styles.emptyIcon}>📊</Text>
+            <Text style={styles.emptyTitle}>No data yet</Text>
+            <Text style={styles.emptySub}>Log meals for a few days to see your nutrition insights and charts here.</Text>
+          </View>
+        )}
 
         {/* Daily Calories vs Goal */}
         <View style={styles.card}>
@@ -699,6 +713,10 @@ const styles = StyleSheet.create({
   card: { backgroundColor: '#fff', marginHorizontal: 16, marginTop: 12, borderRadius: 16, padding: 16, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.06, shadowRadius: 8, elevation: 3 },
   cardTitle: { fontSize: 15, fontWeight: '700', color: '#333', marginBottom: 2 },
   chartHint: { fontSize: 11, color: '#bbb', marginBottom: 10 },
+  emptyState: { marginHorizontal: 16, marginTop: 12, backgroundColor: '#fff', borderRadius: 16, padding: 32, alignItems: 'center', shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.06, shadowRadius: 8, elevation: 3 },
+  emptyIcon: { fontSize: 48, marginBottom: 12 },
+  emptyTitle: { fontSize: 18, fontWeight: '800', color: '#333', marginBottom: 8 },
+  emptySub: { fontSize: 14, color: '#999', textAlign: 'center', lineHeight: 22 },
   chartWrap: { alignItems: 'flex-start', overflow: 'visible' },
 
   // Floating tooltip on charts

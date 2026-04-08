@@ -1,21 +1,25 @@
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useMemo } from 'react';
 import { View, Text, ScrollView, StyleSheet, Image, TouchableOpacity, RefreshControl, StatusBar } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { mealsAPI, waterAPI } from '../services/api';
+import { mealsAPI, waterAPI, API_URL } from '../services/api';
 import { trackEvent } from '../utils/analytics';
 import { WATER_GOAL_KEY } from './NotificationsScreen';
 
-const BASE_URL = (process.env.EXPO_PUBLIC_API_URL || 'https://snapcalorie-backend-production.up.railway.app/api').replace('/api', '');
+const BASE_URL = API_URL.replace('/api', '');
 
 function MealThumb({ imageUrl }) {
   const [error, setError] = useState(false);
   const fullUri = imageUrl && !imageUrl.startsWith('http') ? `${BASE_URL}${imageUrl}` : imageUrl;
+  const isFirstPartyImage = fullUri?.startsWith(BASE_URL);
+  const imageSource = isFirstPartyImage
+    ? { uri: fullUri, headers: { Authorization: `Bearer ${global.authToken}` } }
+    : { uri: fullUri };
   if (fullUri && !error) {
     return (
       <Image
-        source={{ uri: fullUri, headers: { Authorization: `Bearer ${global.authToken}` } }}
+        source={imageSource}
         style={styles.mealImg}
         onError={() => setError(true)}
       />
@@ -30,13 +34,16 @@ export default function DiaryScreen({ navigation }) {
   const [refreshing, setRefreshing] = useState(false);
   const [water, setWaterState] = useState(0);
   const [waterGoal, setWaterGoal] = useState(8);
-  const todayDate = new Date().toISOString().slice(0, 10);
+  const [fetchError, setFetchError] = useState(false);
+  const _now = new Date();
+  const todayDate = `${_now.getFullYear()}-${String(_now.getMonth() + 1).padStart(2, '0')}-${String(_now.getDate()).padStart(2, '0')}`;
 
-  // Load today's water count and goal on mount
-  useEffect(() => {
+  // Load today's water count and goal — on mount AND when screen refocuses
+  // (notification action buttons update the DB in background; need to resync on focus)
+  useFocusEffect(useCallback(() => {
     waterAPI.get(todayDate).then(res => setWaterState(res.data.data?.glasses ?? 0)).catch(() => {});
     AsyncStorage.getItem(WATER_GOAL_KEY).then(val => { if (val) setWaterGoal(Number(val)); }).catch(() => {});
-  }, []);
+  }, [todayDate]));
 
   const setWater = useCallback((updater) => {
     setWaterState(prev => {
@@ -51,7 +58,10 @@ export default function DiaryScreen({ navigation }) {
     try {
       const res = await mealsAPI.getAll();
       setMeals(res.data.data);
-    } catch {}
+      setFetchError(false);
+    } catch {
+      setFetchError(true);
+    }
   }, []);
 
   useFocusEffect(useCallback(() => { fetchMeals(); }, [fetchMeals]));
@@ -62,12 +72,12 @@ export default function DiaryScreen({ navigation }) {
     setRefreshing(false);
   };
 
-  const grouped = meals.reduce((acc, meal) => {
+  const grouped = useMemo(() => meals.reduce((acc, meal) => {
     const date = new Date(meal.analyzed_at).toDateString();
     if (!acc[date]) acc[date] = [];
     acc[date].push(meal);
     return acc;
-  }, {});
+  }, {}), [meals]);
 
   const formatDate = (dateStr) => {
     const today = new Date().toDateString();
@@ -80,6 +90,11 @@ export default function DiaryScreen({ navigation }) {
   return (
     <View style={[styles.container, { paddingTop: insets.top }]}>
       <StatusBar barStyle="dark-content" backgroundColor="#fff" />
+      {fetchError && (
+        <TouchableOpacity style={styles.errorBanner} onPress={onRefresh}>
+          <Text style={styles.errorBannerText}>Could not load meals. Tap to retry.</Text>
+        </TouchableOpacity>
+      )}
       <ScrollView refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}>
         <View style={styles.header}>
           <Text style={styles.title}>SnapCalorie</Text>
@@ -155,6 +170,8 @@ export default function DiaryScreen({ navigation }) {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#f8f8f8' },
+  errorBanner: { backgroundColor: '#ff4444', paddingVertical: 8, paddingHorizontal: 16, alignItems: 'center' },
+  errorBannerText: { color: '#fff', fontSize: 13, fontWeight: '600' },
   header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: 20, backgroundColor: '#fff' },
   title: { fontSize: 22, fontWeight: '800', color: '#FF6B35' },
   headerRight: { fontSize: 16, fontWeight: '600', color: '#333' },

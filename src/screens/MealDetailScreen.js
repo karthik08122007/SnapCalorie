@@ -2,7 +2,7 @@ import { useState, useRef } from 'react';
 import { View, Text, ScrollView, StyleSheet, Image, TouchableOpacity, StatusBar, ActivityIndicator, TextInput, Modal } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { mealsAPI } from '../services/api';
+import { mealsAPI, API_URL } from '../services/api';
 import ViewShot from 'react-native-view-shot';
 import * as Sharing from 'expo-sharing';
 import MealShareCard from '../components/MealShareCard';
@@ -10,7 +10,7 @@ import { calculateMealHealthScore } from '../utils/mealHealthScore';
 import { trackEvent } from '../utils/analytics';
 import AppModal from '../components/AppModal';
 
-const BASE_URL = (process.env.EXPO_PUBLIC_API_URL || 'https://snapcalorie-backend-production.up.railway.app/api').replace('/api', '');
+const BASE_URL = API_URL.replace('/api', '');
 
 export default function MealDetailScreen({ route, navigation }) {
   const { meal } = route.params;
@@ -38,14 +38,17 @@ export default function MealDetailScreen({ route, navigation }) {
   const handleSaveEdit = async () => {
     const mealId = mealData._id || mealData.id;
     if (!mealId) { showModal('❌', 'Error', 'Cannot edit this meal'); return; }
+    const calories = Number(editData.calories);
+    const protein_g = Number(editData.protein_g);
+    const carbs_g = Number(editData.carbs_g);
+    const fat_g = Number(editData.fat_g);
+    if (isNaN(calories) || calories < 0 || calories > 9999) { showModal('⚠️', 'Invalid Value', 'Calories must be between 0 and 9999.'); return; }
+    if (isNaN(protein_g) || protein_g < 0 || protein_g > 999) { showModal('⚠️', 'Invalid Value', 'Protein must be between 0 and 999g.'); return; }
+    if (isNaN(carbs_g) || carbs_g < 0 || carbs_g > 999) { showModal('⚠️', 'Invalid Value', 'Carbs must be between 0 and 999g.'); return; }
+    if (isNaN(fat_g) || fat_g < 0 || fat_g > 999) { showModal('⚠️', 'Invalid Value', 'Fat must be between 0 and 999g.'); return; }
     setSaving(true);
     try {
-      const updated = {
-        calories: Number(editData.calories) || 0,
-        protein_g: Number(editData.protein_g) || 0,
-        carbs_g: Number(editData.carbs_g) || 0,
-        fat_g: Number(editData.fat_g) || 0,
-      };
+      const updated = { calories, protein_g, carbs_g, fat_g };
       await mealsAPI.update(mealId, updated);
       setMealData(prev => ({ ...prev, ...updated }));
       setEditing(false);
@@ -88,6 +91,10 @@ export default function MealDetailScreen({ route, navigation }) {
 
   const rawUrl = mealData.image_url;
   const imageUri = rawUrl && !rawUrl.startsWith('http') ? `${BASE_URL}${rawUrl}` : rawUrl;
+  const isFirstPartyImage = imageUri?.startsWith(BASE_URL);
+  const imageSource = isFirstPartyImage
+    ? { uri: imageUri, headers: { Authorization: `Bearer ${global.authToken}` } }
+    : { uri: imageUri };
 
   const handleDelete = () => {
     const mealId = mealData._id || mealData.id;
@@ -150,7 +157,7 @@ export default function MealDetailScreen({ route, navigation }) {
       <ScrollView showsVerticalScrollIndicator={false}>
         {showImage ? (
           <Image
-            source={{ uri: imageUri, headers: { Authorization: `Bearer ${global.authToken}` } }}
+            source={imageSource}
             style={styles.heroImage}
             resizeMode="cover"
             onError={() => setImgError(true)}

@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>SnapCalorie Splash Demo</title>
+<style>
+  *{margin:0;padding:0;box-sizing:border-box;}
+  body{
+    background:#e0e0e0;display:flex;align-items:center;
+    justify-content:center;min-height:100vh;
+    font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+  }
+  .phone{
+    width:320px;height:620px;background:white;border-radius:40px;
+    box-shadow:0 30px 80px rgba(0,0,0,0.25);overflow:hidden;position:relative;
+    display:flex;align-items:center;justify-content:center;flex-direction:column;
+  }
+  #splash{
+    position:absolute;inset:0;background:#fff;
+    display:flex;flex-direction:column;align-items:center;justify-content:center;
+    z-index:10;animation:fadeOut 0.5s ease 5.6s forwards;
+  }
+  @keyframes fadeOut{to{opacity:0;pointer-events:none;}}
+
+  .frame-wrap{
+    width:220px;height:220px;position:relative;
+    display:flex;align-items:center;justify-content:center;
+  }
+
+  /* ── Step 1: Orange box ── */
+  .logo-box{
+    position:absolute;
+    width:196px;height:196px;border-radius:44px;
+    background:linear-gradient(135deg,#FF5020 0%,#FF7840 50%,#FFAA70 100%);
+    transform:scale(0);
+    animation:boxIn 0.55s cubic-bezier(0.34,1.56,0.64,1) 0.1s forwards;
+  }
+  @keyframes boxIn{to{transform:scale(1);}}
+
+  /* SVG layer — all white elements drawn here */
+  .icon-svg{
+    position:absolute;
+    width:196px;height:196px;
+    overflow:visible;
+  }
+
+  /* ── Step 2: Apple body ── */
+  .apple-body{
+    opacity:0;transform-origin:98px 110px;transform:scale(0.1) translateY(20px);
+    animation:appleIn 0.45s cubic-bezier(0.34,1.7,0.64,1) 0.78s forwards;
+  }
+  @keyframes appleIn{to{opacity:1;transform:scale(1) translateY(0);}}
+
+  /* ── Step 3: Lens + dots ── */
+  .lens-group{
+    opacity:0;transform-origin:98px 108px;transform:scale(0.3);
+    animation:lensIn 0.3s cubic-bezier(0.34,1.5,0.64,1) 1.35s forwards;
+  }
+  @keyframes lensIn{to{opacity:1;transform:scale(1);}}
+
+  /* ── Step 4: Scanner brackets ── */
+  .brackets{
+    opacity:0;
+    animation:bracketIn 0.28s ease 1.75s forwards;
+  }
+  @keyframes bracketIn{to{opacity:1;}}
+
+  /* ── Step 5: Scan line ── */
+  .scan-line{
+    opacity:0;
+    animation:
+      scanShow 0s ease 2.1s forwards,
+      sweep 0.95s ease-in-out 2.1s 3 alternate;
+  }
+  @keyframes scanShow{to{opacity:1;}}
+  @keyframes sweep{
+    from{transform:translateY(0);}
+    to{transform:translateY(68px);}
+  }
+
+  /* ── Wordmark ── */
+  .wm{
+    margin-top:46px;text-align:center;
+    opacity:0;transform:translateY(14px);
+    animation:wmIn 0.32s ease 4.8s forwards;
+  }
+  @keyframes wmIn{to{opacity:1;transform:translateY(0);}}
+  .wm h1{font-size:30px;font-weight:800;color:#FF6B35;letter-spacing:-0.5px;}
+  .wm p{font-size:13px;color:#999;font-weight:500;margin-top:5px;}
+
+  .app-bg{
+    opacity:0;display:flex;flex-direction:column;align-items:center;gap:12px;
+    animation:show 0.4s ease 6.1s forwards;
+  }
+  @keyframes show{to{opacity:1;}}
+  .app-bg .hi{font-size:48px;}
+  .app-bg span{color:#aaa;font-size:14px;}
+
+  .replay-btn{
+    position:fixed;bottom:24px;left:50%;transform:translateX(-50%);
+    background:#FF6B35;color:white;border:none;padding:10px 24px;
+    border-radius:20px;font-size:14px;font-weight:600;cursor:pointer;
+    box-shadow:0 4px 16px rgba(255,107,53,0.4);
+  }
+</style>
+</head>
+<body>
+<div class="phone">
+  <div id="splash">
+    <div class="frame-wrap">
+
+      <!-- Step 1: Orange gradient box -->
+      <div class="logo-box"></div>
+
+      <!-- SVG icon elements drawn separately -->
+      <svg class="icon-svg" viewBox="0 0 196 196" fill="none" xmlns="http://www.w3.org/2000/svg">
+
+        <!-- Step 2: Apple body + leaf + bite -->
+        <g class="apple-body">
+          <!-- Apple main body -->
+          <path d="
+            M98 58
+            C 78 58, 58 76, 58 100
+            C 58 128, 74 148, 90 148
+            C 94 148, 96 146, 98 146
+            C 100 146, 102 148, 106 148
+            C 122 148, 138 128, 138 100
+            C 138 76, 118 58, 98 58 Z
+          " fill="white"/>
+          <!-- Bite taken out of right side -->
+          <circle cx="132" cy="80" r="16" fill="url(#orangeGrad)"/>
+          <!-- Leaf -->
+          <path d="M102 56 C102 44, 114 38, 118 34 C114 44, 108 50, 102 56 Z" fill="white"/>
+          <!-- Leaf stem -->
+          <path d="M98 58 C98 52, 100 46, 102 42" stroke="white" stroke-width="3" stroke-linecap="round" fill="none"/>
+        </g>
+
+        <!-- Step 3: Camera lens + radiating dots -->
+        <g class="lens-group">
+          <!-- Outer lens ring -->
+          <circle cx="98" cy="106" r="18" stroke="white" stroke-width="3" fill="none"/>
+          <!-- Inner lens -->
+          <circle cx="98" cy="106" r="10" stroke="white" stroke-width="2.5" fill="none"/>
+          <!-- Center dot -->
+          <circle cx="98" cy="106" r="3.5" fill="white"/>
+          <!-- Radial dots around lens -->
+          <circle cx="98" cy="84" r="2.5" fill="white"/>
+          <circle cx="98" cy="128" r="2.5" fill="white"/>
+          <circle cx="76" cy="106" r="2.5" fill="white"/>
+          <circle cx="120" cy="106" r="2.5" fill="white"/>
+          <circle cx="82.4" cy="90.4" r="2" fill="white"/>
+          <circle cx="113.6" cy="90.4" r="2" fill="white"/>
+          <circle cx="82.4" cy="121.6" r="2" fill="white"/>
+          <circle cx="113.6" cy="121.6" r="2" fill="white"/>
+          <!-- Highlight glint -->
+          <circle cx="92" cy="99" r="3" fill="white" opacity="0.7"/>
+        </g>
+
+        <!-- Step 4: Scanner bracket corners -->
+        <g class="brackets">
+          <!-- Top-left -->
+          <path d="M54 78 L54 66 L66 66" stroke="white" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+          <!-- Top-right -->
+          <path d="M142 78 L142 66 L130 66" stroke="white" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+          <!-- Bottom-left -->
+          <path d="M54 138 L54 150 L66 150" stroke="white" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+          <!-- Bottom-right -->
+          <path d="M142 138 L142 150 L130 150" stroke="white" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+        </g>
+
+        <!-- Step 5: Scan line (clips inside bracket area) -->
+        <g class="scan-line">
+          <clipPath id="scanClip">
+            <rect x="54" y="66" width="88" height="84"/>
+          </clipPath>
+          <g clip-path="url(#scanClip)">
+            <rect x="54" y="70" width="88" height="2.5" fill="white" opacity="0.95"/>
+            <rect x="54" y="72.5" width="88" height="14" fill="url(#scanGlow)" opacity="0.35"/>
+          </g>
+        </g>
+
+        <!-- Gradient defs -->
+        <defs>
+          <linearGradient id="orangeGrad" x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0%" stop-color="#FF5020"/>
+            <stop offset="100%" stop-color="#FF8840"/>
+          </linearGradient>
+          <linearGradient id="scanGlow" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stop-color="white"/>
+            <stop offset="100%" stop-color="white" stop-opacity="0"/>
+          </linearGradient>
+        </defs>
+      </svg>
+
+    </div>
+
+    <!-- Wordmark -->
+    <div class="wm">
+      <h1>SnapCalorie</h1>
+      <p>AI-powered nutrition tracking</p>
+    </div>
+  </div>
+
+  <div class="app-bg">
+    <div class="hi">🏠</div>
+    <span>App loaded!</span>
+  </div>
+</div>
+<button class="replay-btn" onclick="location.reload()">↺ Replay</button>
+</body>
+</html>

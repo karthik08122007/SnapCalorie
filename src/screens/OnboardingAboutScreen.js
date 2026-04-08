@@ -1,5 +1,5 @@
 import { useState, useCallback } from 'react';
-import { View, Text, StyleSheet, SafeAreaView, TouchableOpacity, TextInput, ScrollView, BackHandler } from 'react-native';
+import { View, Text, StyleSheet, SafeAreaView, TouchableOpacity, TextInput, ScrollView, BackHandler, Alert } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { useAuth } from '../context/AuthContext';
 
@@ -106,7 +106,13 @@ export default function OnboardingAboutScreen({ navigation }) {
 
         <TouchableOpacity
           style={[styles.btn, !canNext && styles.btnDisabled]}
-          onPress={() => navigation.navigate('OnboardingActivity', { gender, age, height, weight })}
+          onPress={() => {
+            const a = Number(age), h = Number(height), w = Number(weight);
+            if (!a || a < 10 || a > 100) return Alert.alert('Invalid Age', 'Please enter an age between 10 and 100.');
+            if (!h || h < 100 || h > 250) return Alert.alert('Invalid Height', 'Please enter a height between 100 and 250 cm.');
+            if (!w || w < 20 || w > 300) return Alert.alert('Invalid Weight', 'Please enter a weight between 20 and 300 kg.');
+            navigation.navigate('OnboardingActivity', { gender, age, height, weight });
+          }}
           disabled={!canNext}
         >
           <Text style={styles.btnText}>Continue →</Text>
