@@ -10,7 +10,7 @@ import { calculateMealHealthScore } from '../utils/mealHealthScore';
 import { trackEvent } from '../utils/analytics';
 import AppModal from '../components/AppModal';
 
-const BASE_URL = API_URL.replace('/api', '');
+const BASE_URL = API_URL ? API_URL.replace('/api', '') : '';
 
 export default function MealDetailScreen({ route, navigation }) {
   const { meal } = route.params;

@@ -7,7 +7,7 @@ import { mealsAPI, waterAPI, API_URL } from '../services/api';
 import { trackEvent } from '../utils/analytics';
 import { WATER_GOAL_KEY } from './NotificationsScreen';
 
-const BASE_URL = API_URL.replace('/api', '');
+const BASE_URL = API_URL ? API_URL.replace('/api', '') : '';
 
 function MealThumb({ imageUrl }) {
   const [error, setError] = useState(false);

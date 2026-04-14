@@ -12,7 +12,7 @@ import { PORTION_SIZES } from '../utils/portionHelper';
 import { trackEvent } from '../utils/analytics';
 import AppModal from '../components/AppModal';
 
-const BASE_URL = API_URL.replace('/api', '');
+const BASE_URL = API_URL ? API_URL.replace('/api', '') : '';
 
 // Normalize backend meal into a list of editable items
 function initItems(meal) {

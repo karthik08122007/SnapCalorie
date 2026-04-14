@@ -1,7 +1,12 @@
 import { createContext, useContext, useState, useEffect } from 'react';
 import * as SecureStore from 'expo-secure-store';
-import { authAPI } from '../services/api';
+import { authAPI, API_URL } from '../services/api';
 import { clearFoodHistory } from '../services/foodHistory';
+
+let GoogleSignin = null;
+try {
+  GoogleSignin = require('@react-native-google-signin/google-signin').GoogleSignin;
+} catch {}
 
 const KEYS = {
   token: 'auth_token',
@@ -28,6 +33,11 @@ export const AuthProvider = ({ children }) => {
   const [token, setToken] = useState(null);
   const [onboarded, setOnboarded] = useState(false);
   const [loading, setLoading] = useState(true);
+
+  // Warm up the backend on app start to prevent cold-start delay on first API call
+  useEffect(() => {
+    fetch(`${API_URL}/health`).catch(() => {});
+  }, []);
 
   // Restore session from SecureStore on app start
   useEffect(() => {
@@ -135,6 +145,10 @@ export const AuthProvider = ({ children }) => {
     setOnboarded(false);
     await clearSession();
     await clearFoodHistory();
+    // Clear Google session on logout so account picker shows on next sign-in
+    if (GoogleSignin) {
+      try { await GoogleSignin.signOut(); } catch {}
+    }
   };
 
   // Register a global handler so the axios interceptor can trigger logout on 401

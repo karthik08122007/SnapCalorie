@@ -74,7 +74,7 @@ export default function PrivacyScreen({ navigation }) {
     {
       title: 'Your Rights',
       items: [
-        { icon: 'download-outline', label: 'Export Your Data', desc: 'Download a copy of all your data', color: '#FFD93D', onPress: () => showModal('📄', 'Export Data', 'Your data export will be emailed to you within 24 hours.') },
+        { icon: 'download-outline', label: 'Export Your Data', desc: 'Download a PDF of all your meals', color: '#FFD93D', onPress: () => navigation.navigate('ProfileMain') },
         { icon: 'trash-outline', label: 'Delete Account', desc: 'Permanently delete your account and all data', color: '#ff4444', onPress: openDeleteFlow },
       ],
     },

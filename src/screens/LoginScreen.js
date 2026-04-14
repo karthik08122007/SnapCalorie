@@ -38,7 +38,6 @@ export default function LoginScreen({ navigation }) {
     setError('');
     try {
       await GoogleSignin.hasPlayServices({ showPlayServicesUpdateDialog: true });
-      await GoogleSignin.signOut(); // Clear cached session so account picker always shows
       const result = await GoogleSignin.signIn();
       if (result.type === 'success') {
         const idToken = result.data?.idToken;

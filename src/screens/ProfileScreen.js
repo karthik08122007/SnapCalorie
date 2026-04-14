@@ -111,7 +111,7 @@ export default function ProfileScreen({ navigation }) {
   const menuItems = [
     { icon: 'person-outline', label: 'Edit Profile', color: '#FF6B35', screen: 'EditProfile' },
     { icon: 'flag-outline', label: 'My Goals', color: '#4ECDC4', screen: 'MyGoals' },
-    { icon: 'key-outline', label: 'Change Password', color: '#9B59B6', screen: 'ChangePassword' },
+    ...(user?.hasPassword !== false ? [{ icon: 'key-outline', label: 'Change Password', color: '#9B59B6', screen: 'ChangePassword' }] : []),
     { icon: 'notifications-outline', label: 'Notifications', color: '#45B7D1', screen: 'Notifications' },
     { icon: 'shield-outline', label: 'Privacy', color: '#96CEB4', screen: 'Privacy' },
     { icon: 'help-circle-outline', label: 'Help & Support', color: '#FFD93D', screen: 'HelpSupport' },
