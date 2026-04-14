@@ -2,7 +2,7 @@ import { NavigationContainer } from '@react-navigation/native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { Ionicons } from '@expo/vector-icons';
-import { TouchableOpacity, StyleSheet } from 'react-native';
+import { View, TouchableOpacity, StyleSheet } from 'react-native';
 
 import HomeScreen from '../screens/HomeScreen';
 import DiaryScreen from '../screens/DiaryScreen';
@@ -34,8 +34,10 @@ const LogMealStack = createNativeStackNavigator();
 
 function AddButton({ onPress }) {
   return (
-    <TouchableOpacity style={styles.addBtn} onPress={onPress}>
-      <Ionicons name="add" size={32} color="white" />
+    <TouchableOpacity style={styles.addBtnWrapper} onPress={onPress}>
+      <View style={styles.addBtn}>
+        <Ionicons name="add" size={32} color="white" />
+      </View>
     </TouchableOpacity>
   );
 }
@@ -151,6 +153,11 @@ const styles = StyleSheet.create({
     height: 80,
     paddingBottom: 16,
     paddingTop: 8,
+  },
+  addBtnWrapper: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   addBtn: {
     width: 56,

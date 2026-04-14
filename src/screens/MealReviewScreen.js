@@ -142,7 +142,7 @@ export default function MealReviewScreen({ route, navigation }) {
   const [saving, setSaving] = useState(false);
   const [imgError, setImgError] = useState(false);
   const [showFullNutrition, setShowFullNutrition] = useState(false);
-  const [swappingItemId, setSwappingItemId] = useState(null);
+  const [swappingItemId] = useState(null);
   const [modal, setModal] = useState({ visible: false, icon: '', title: '', message: '', confirmText: '', confirmDestructive: false, onConfirm: null });
 
   const showModal = (icon, title, message) => setModal({ visible: true, icon, title, message, onConfirm: null });
@@ -217,33 +217,9 @@ export default function MealReviewScreen({ route, navigation }) {
     setItems(prev => prev.map(i => i.id === id ? { ...i, portion } : i));
   };
 
-  const swapAlternative = async (itemId, alternativeName) => {
-    setSwappingItemId(itemId);
-    try {
-      const res = await mealsAPI.analyzeText(alternativeName, 'Snack');
-      const newData = res.data?.data || res.data;
-      // Delete the newly created meal to avoid polluting the diary
-      const newId = newData._id || newData.id;
-      if (newId) { try { await mealsAPI.delete(newId); } catch {} }
-
-      setItems(prev => prev.map(i =>
-        i.id === itemId
-          ? {
-              ...i,
-              name: alternativeName,
-              calories: Number(newData.calories) || i.calories,
-              protein_g: Number(newData.protein_g) || i.protein_g,
-              carbs_g: Number(newData.carbs_g) || i.carbs_g,
-              fat_g: Number(newData.fat_g) || i.fat_g,
-            }
-          : i
-      ));
-    } catch {
-      // Just rename if fetch fails
-      setItems(prev => prev.map(i => i.id === itemId ? { ...i, name: alternativeName } : i));
-    } finally {
-      setSwappingItemId(null);
-    }
+  const swapAlternative = (itemId, alternativeName) => {
+    // Rename the item locally — no API call so no scan is consumed
+    setItems(prev => prev.map(i => i.id === itemId ? { ...i, name: alternativeName } : i));
   };
 
   const handleRefine = async () => {
@@ -279,19 +255,15 @@ export default function MealReviewScreen({ route, navigation }) {
           food_name: confirmedName,
         });
       } else {
-        // Quick-add from history — create a new meal via text analysis
-        const res = await mealsAPI.analyzeText(confirmedName, meal.meal_type || 'snack');
-        const created = res.data?.data || res.data;
-        const newId = created._id || created.id;
-        if (newId) {
-          await mealsAPI.update(newId, {
-            calories: totals.calories,
-            protein_g: totals.protein_g,
-            carbs_g: totals.carbs_g,
-            fat_g: totals.fat_g,
-            food_name: confirmedName,
-          });
-        }
+        // Quick-add from history — log directly, no AI scan used
+        await mealsAPI.log({
+          food_name: confirmedName,
+          calories: totals.calories,
+          protein_g: totals.protein_g,
+          carbs_g: totals.carbs_g,
+          fat_g: totals.fat_g,
+          mealType: meal.meal_type || 'snack',
+        });
       }
     } catch {
       // Best-effort; navigate anyway

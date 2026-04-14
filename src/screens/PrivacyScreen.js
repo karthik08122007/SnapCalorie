@@ -51,7 +51,7 @@ export default function PrivacyScreen({ navigation }) {
     }
     setLoading(true);
     try {
-      await authAPI.deleteAccount(password);
+      await authAPI.deleteAccount({ password });
       setStep(0);
       await logout();
     } catch (err) {

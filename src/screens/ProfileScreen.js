@@ -199,17 +199,26 @@ export default function ProfileScreen({ navigation }) {
         <TouchableOpacity style={styles.exportBtn} onPress={async () => {
           try {
             setExporting(true);
-            const API_BASE = API_URL;
             const fileUri = FileSystem.cacheDirectory + 'snapcalorie-export.pdf';
+            // Delete any stale cached file first
+            await FileSystem.deleteAsync(fileUri, { idempotent: true });
+            const token = global.authToken;
+            if (!token) throw new Error('Not logged in. Please sign in and try again.');
             const result = await FileSystem.downloadAsync(
-              `${API_BASE}/auth/export`,
+              `${API_URL}/auth/export`,
               fileUri,
-              { headers: { Authorization: `Bearer ${global.authToken}` } }
+              { headers: { Authorization: `Bearer ${token}` } }
             );
             if (result.status !== 200) {
-              throw new Error(`Server returned ${result.status}`);
+              throw new Error(`Export failed (${result.status}). Please try again.`);
             }
-            await Sharing.shareAsync(result.uri, { mimeType: 'application/pdf', dialogTitle: 'SnapCalorie Data Export', UTI: 'com.adobe.pdf' });
+            const info = await FileSystem.getInfoAsync(fileUri);
+            if (!info.exists || info.size < 500) {
+              throw new Error('Export file is empty. Please try again.');
+            }
+            const canShare = await Sharing.isAvailableAsync();
+            if (!canShare) throw new Error('Sharing is not available on this device.');
+            await Sharing.shareAsync(fileUri, { mimeType: 'application/pdf', dialogTitle: 'SnapCalorie Data Export', UTI: 'com.adobe.pdf' });
           } catch (err) {
             showModal('❌', 'Export failed', err?.message || 'Could not export your data. Please try again.');
           } finally {

@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-export const API_URL = process.env.EXPO_PUBLIC_API_URL || 'https://snapcalorie-backend-production.up.railway.app/api';
+export const API_URL = process.env.EXPO_PUBLIC_API_URL;
 
 const api = axios.create({ baseURL: API_URL });
 
@@ -29,7 +29,7 @@ export const authAPI = {
   googleAuth: (idToken) => api.post('/auth/google', { idToken }),
   me: () => api.get('/auth/me'),
   updateProfile: (data) => api.patch('/auth/me', data),
-  deleteAccount: (password) => api.delete('/auth/account', { data: { password } }),
+  deleteAccount: ({ password, googleIdToken } = {}) => api.delete('/auth/account', { data: { password, googleIdToken } }),
   forgotPassword: (email) => api.post('/auth/forgot-password', { email }),
   resetPassword: (email, otp, newPassword) => api.post('/auth/reset-password', { email, otp, newPassword }),
 };
@@ -39,7 +39,8 @@ export const mealsAPI = {
     headers: { 'Content-Type': 'multipart/form-data' },
   }),
   analyzeText: (query, mealType) => api.post('/meals/analyze-text', { query, mealType }),
-  getAll: (page = 1, limit = 50) => api.get(`/meals?page=${page}&limit=${limit}`),
+  getAll: (page = 1, limit = 500) => api.get(`/meals?page=${page}&limit=${limit}`),
+  log: (data) => api.post('/meals/log', data),
   delete: (id) => api.delete(`/meals/${id}`),
   update: (id, data) => api.patch(`/meals/${id}`, data),
 };

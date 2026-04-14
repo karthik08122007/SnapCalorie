@@ -11,7 +11,7 @@ const SCREEN_WIDTH = Dimensions.get('window').width;
 const CARD_WIDTH = SCREEN_WIDTH - 32;
 
 const DAYS = ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'];
-const BASE_URL = API_URL.replace('/api', '');
+const BASE_URL = API_URL ? API_URL.replace('/api', '') : '';
 
 function CalorieRing({ consumed, goal }) {
   const size = 200;
@@ -220,7 +220,6 @@ export default function HomeScreen({ navigation }) {
 
   const scansUsed = scanInfo?.used ?? (user?.scanCount ?? null);
   const scansLimit = scanInfo?.limit ?? (user?.scanLimit ?? user?.scan_limit ?? 8);
-  const scansLeft = scansUsed !== null ? scansLimit - scansUsed : null;
   const scanPlan = (scanInfo?.plan ?? user?.plan ?? 'FREE').toUpperCase();
   const resetAt = scanInfo?.resetAt ?? user?.scansResetAt ?? null;
   const resetLabel = resetAt
@@ -272,8 +271,8 @@ export default function HomeScreen({ navigation }) {
         <TouchableOpacity style={styles.tooltipOverlay} activeOpacity={1} onPress={() => setTooltipVisible(false)}>
           <View style={styles.tooltipBox}>
             <View style={styles.tooltipHeader}>
-              <View style={styles.planBadge}>
-                <Text style={styles.planBadgeText}>{scanPlan}</Text>
+              <View style={styles.tooltipPlanBadge}>
+                <Text style={styles.tooltipPlanBadgeText}>{scanPlan}</Text>
               </View>
               <Text style={styles.tooltipTitle}>Scans Used</Text>
             </View>
@@ -318,7 +317,7 @@ export default function HomeScreen({ navigation }) {
                 delayLongPress={800}
               >
                 <Text style={[styles.scanBadgeText, scansUsed >= scansLimit - 3 && styles.scanBadgeTextLow]}>
-                  📷 {scansUsed}/{scansLimit}
+                  📷 {Math.min(scansUsed, scansLimit)}/{scansLimit}
                 </Text>
               </TouchableOpacity>
             )}
@@ -459,8 +458,8 @@ const styles = StyleSheet.create({
   tooltipOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.35)', justifyContent: 'flex-start', alignItems: 'flex-end', paddingTop: 80, paddingRight: 16 },
   tooltipBox: { backgroundColor: '#fff', borderRadius: 18, padding: 18, width: 220, shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.15, shadowRadius: 12, elevation: 8 },
   tooltipHeader: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 12 },
-  planBadge: { backgroundColor: '#FF6B35', borderRadius: 6, paddingHorizontal: 8, paddingVertical: 3 },
-  planBadgeText: { color: '#fff', fontSize: 11, fontWeight: '800', letterSpacing: 0.5 },
+  tooltipPlanBadge: { backgroundColor: '#FF6B35', borderRadius: 6, paddingHorizontal: 8, paddingVertical: 3 },
+  tooltipPlanBadgeText: { color: '#fff', fontSize: 11, fontWeight: '800', letterSpacing: 0.5 },
   tooltipTitle: { fontSize: 14, fontWeight: '700', color: '#333' },
   tooltipRow: { flexDirection: 'row', alignItems: 'baseline', marginBottom: 10 },
   tooltipBig: { fontSize: 36, fontWeight: '800', color: '#FF6B35' },

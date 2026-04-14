@@ -79,7 +79,7 @@ export default function MealDetailScreen({ route, navigation }) {
         const canShare = await Sharing.isAvailableAsync();
         if (!canShare) { showModal('ℹ️', 'Not Available', 'Sharing not available on this device'); return; }
         await Sharing.shareAsync(uri, { mimeType: 'image/png', dialogTitle: 'Share your meal' });
-        trackEvent('share_meal', { health_score: healthScore, calories: meal.calories });
+        trackEvent('share_meal', { health_score: healthScore, calories: mealData.calories });
       } catch {
         setShowShareCard(false);
         showModal('❌', 'Share failed', 'Could not generate share card.');
@@ -272,7 +272,7 @@ export default function MealDetailScreen({ route, navigation }) {
       {showShareCard && (
         <View style={{ position: 'absolute', top: -1000, left: 0 }} pointerEvents="none">
           <ViewShot ref={shareCardRef} options={{ format: 'png', quality: 1 }}>
-            <MealShareCard meal={meal} healthScore={healthScore} healthMessage={healthMessage} />
+            <MealShareCard meal={mealData} healthScore={healthScore} healthMessage={healthMessage} />
           </ViewShot>
         </View>
       )}

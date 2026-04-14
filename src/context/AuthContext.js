@@ -89,24 +89,27 @@ export const AuthProvider = ({ children }) => {
   };
 
   const completeOnboarding = async (data) => {
+    const updatedUser = { ...user, ...data };
+    setUser(updatedUser);
+    setOnboarded(true);
+    if (token) await saveSession(token, updatedUser, true);
+    // Persist body stats to server — retry once on failure so reinstalls
+    // can recover onboarding state from the server on next login
+    const profilePayload = {
+      gender: data.gender,
+      age: data.age ? Number(data.age) : undefined,
+      heightCm: data.height ? Number(data.height) : undefined,
+      weightKg: data.weight ? Number(data.weight) : undefined,
+      activityLevel: data.activity,
+      goal: data.goal,
+    };
     try {
-      const updatedUser = { ...user, ...data };
-      setUser(updatedUser);
-      setOnboarded(true);
-      if (token) await saveSession(token, updatedUser, true);
-      // Persist body stats to server so they survive re-login
-      try {
-        await authAPI.updateProfile({
-          gender: data.gender,
-          age: data.age ? Number(data.age) : undefined,
-          heightCm: data.height ? Number(data.height) : undefined,
-          weightKg: data.weight ? Number(data.weight) : undefined,
-          activityLevel: data.activity,
-          goal: data.goal,
-        });
-      } catch {}
+      await authAPI.updateProfile(profilePayload);
     } catch {
-      setOnboarded(true);
+      // Retry once after 2 seconds
+      setTimeout(async () => {
+        try { await authAPI.updateProfile(profilePayload); } catch {}
+      }, 2000);
     }
   };
 
@@ -138,7 +141,7 @@ export const AuthProvider = ({ children }) => {
   useEffect(() => {
     global.onAuthExpired = logout;
     return () => { global.onAuthExpired = null; };
-  }, []);
+  }, [logout]);
 
   return (
     <AuthContext.Provider value={{ user, token, loading, login, googleLogin, register, logout, onboarded, completeOnboarding, updateProfile }}>

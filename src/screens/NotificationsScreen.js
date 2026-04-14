@@ -18,9 +18,9 @@ const WATER_INTERVAL_KEY = 'water_reminder_interval';
 export const WATER_GOAL_KEY = 'water_goal_liters';
 
 const INTERVALS = [
-  { label: '30 min', value: 30 },
-  { label: '1 hr',   value: 60 },
-  { label: '2 hr',   value: 120 },
+  { label: '1 hr',  value: 60 },
+  { label: '2 hrs', value: 120 },
+  { label: '3 hrs', value: 180 },
 ];
 
 async function requestPermissions() {
@@ -146,7 +146,7 @@ export default function NotificationsScreen({ navigation }) {
       setSettings(prev => ({ ...prev, goalAlerts, mealReminders, dailySummary, tips, weeklyReport, waterReminder: !!waterRaw }));
       if (intervalRaw) setWaterInterval(Number(intervalRaw));
       if (goalRaw) setWaterGoal(Number(goalRaw));
-    });
+    }).catch(() => {});
   }, []);
 
   const setLoad = (key, val) => setLoading(prev => ({ ...prev, [key]: val }));

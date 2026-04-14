@@ -15,7 +15,7 @@
       },
       "env": {
         "EXPO_PUBLIC_API_URL": "https://api.snapcalorie.in/api",
-        "EXPO_PUBLIC_GOOGLE_CLIENT_ID": "516050979709-q8pcpdj3nruu52eojk9u5cjl0pl05mjh.apps.googleusercontent.com",
+        "EXPO_PUBLIC_GOOGLE_CLIENT_ID": "321780302704-dr42iij56oe1rlqml77c4his8rtgb74u.apps.googleusercontent.com",
         "EXPO_PUBLIC_RAZORPAY_KEY_ID": "rzp_live_SN6RSFfkG8dZgJ"
       }
     },
@@ -28,7 +28,7 @@
       },
       "env": {
         "EXPO_PUBLIC_API_URL": "https://api.snapcalorie.in/api",
-        "EXPO_PUBLIC_GOOGLE_CLIENT_ID": "516050979709-q8pcpdj3nruu52eojk9u5cjl0pl05mjh.apps.googleusercontent.com",
+        "EXPO_PUBLIC_GOOGLE_CLIENT_ID": "321780302704-dr42iij56oe1rlqml77c4his8rtgb74u.apps.googleusercontent.com",
         "EXPO_PUBLIC_RAZORPAY_KEY_ID": "rzp_live_SN6RSFfkG8dZgJ"
       }
     }

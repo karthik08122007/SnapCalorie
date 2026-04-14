@@ -39,7 +39,7 @@ export default function RegisterScreen({ navigation }) {
       return setError('Password must be 8+ chars with 1 uppercase and 1 number.');
     setLoading(true);
     try {
-      await api.post('/auth/send-email-otp', { email, name });
+      await api.post('/auth/send-email-otp', { email: email.trim().toLowerCase(), name });
       setStep(2);
     } catch (err) {
       setError(err.response?.data?.message || 'Failed to send email OTP.');
@@ -54,9 +54,15 @@ export default function RegisterScreen({ navigation }) {
     setLoading(true);
     try {
       await api.post('/auth/verify-email-otp', { email, otp: emailOtp });
+    } catch (err) {
+      setError(err.response?.data?.message || 'Invalid OTP. Please try again.');
+      setLoading(false);
+      return;
+    }
+    try {
       await register(name, email, password);
     } catch (err) {
-      setError(err.response?.data?.message || 'Invalid OTP.');
+      setError(err.response?.data?.message || 'Registration failed. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -71,6 +77,7 @@ export default function RegisterScreen({ navigation }) {
     setError('');
     try {
       await GoogleSignin.hasPlayServices({ showPlayServicesUpdateDialog: true });
+      await GoogleSignin.signOut(); // Clear cached session so account picker always shows
       const result = await GoogleSignin.signIn();
       if (result.type === 'success') {
         const idToken = result.data?.idToken;
@@ -124,8 +131,8 @@ export default function RegisterScreen({ navigation }) {
                 </TouchableOpacity>
               </View>
               <Text style={styles.hint}>Min 8 characters, 1 uppercase letter, 1 number</Text>
-              <TouchableOpacity style={styles.btn} onPress={handleNext}>
-                <Text style={styles.btnText}>Next →</Text>
+              <TouchableOpacity style={styles.btn} onPress={handleNext} disabled={loading}>
+                <Text style={styles.btnText}>{loading ? 'Sending OTP...' : 'Next →'}</Text>
               </TouchableOpacity>
               <View style={styles.dividerRow}>
                 <View style={styles.divider} />
@@ -153,7 +160,7 @@ export default function RegisterScreen({ navigation }) {
               <TouchableOpacity style={styles.btn} onPress={handleVerifyEmail} disabled={loading}>
                 <Text style={styles.btnText}>{loading ? 'Verifying...' : 'Verify Email'}</Text>
               </TouchableOpacity>
-              <TouchableOpacity onPress={async () => { setError(''); setLoading(true); try { await api.post('/auth/send-email-otp', { email, name }); } catch(e){} finally { setLoading(false); } }} style={styles.backBtn}>
+              <TouchableOpacity onPress={async () => { setError(''); setLoading(true); try { await api.post('/auth/send-email-otp', { email: email.trim().toLowerCase(), name }); } catch(e){} finally { setLoading(false); } }} style={styles.backBtn}>
                 <Text style={styles.backText}>Resend OTP</Text>
               </TouchableOpacity>
               <TouchableOpacity onPress={() => { setStep(1); setEmailOtp(''); }} style={styles.backBtn}>
