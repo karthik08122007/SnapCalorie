@@ -61,7 +61,12 @@ export default function LogMealScreen({ navigation }) {
       trackEvent('meal_scan_completed', { scan_time_ms: Date.now() - scanStart, source: 'photo' });
       navigation.navigate('MealReview', { meal, imageUri: asset.uri });
     } catch (err) {
-      showModal('❌', 'Error', err.response?.data?.message || 'Analysis failed');
+      const data = err.response?.data;
+      if (data?.code === 'NOT_FOOD') {
+        showModal('🚫', 'Not Food', data.message);
+      } else {
+        showModal('❌', 'Error', data?.message || 'Analysis failed. Please try again.');
+      }
     } finally {
       setAnalyzing(false);
     }
