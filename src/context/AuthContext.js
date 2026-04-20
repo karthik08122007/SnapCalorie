@@ -99,7 +99,14 @@ export const AuthProvider = ({ children }) => {
   };
 
   const completeOnboarding = async (data) => {
-    const updatedUser = { ...user, ...data };
+    // Normalize onboarding field names to match what the rest of the app expects
+    const normalized = {
+      ...data,
+      heightCm: data.height ? Number(data.height) : data.heightCm,
+      weightKg: data.weight ? Number(data.weight) : data.weightKg,
+      activityLevel: data.activity || data.activityLevel,
+    };
+    const updatedUser = { ...user, ...normalized };
     setUser(updatedUser);
     setOnboarded(true);
     if (token) await saveSession(token, updatedUser, true);
